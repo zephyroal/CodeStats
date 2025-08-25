@@ -967,3 +967,87 @@ bool CompressFileAllowed(const std::wstring& filePath, const CompressionAlgorith
 
     return compressionMap.at(volumeName);
 }
+
+ULONGLONG CountFileLines(const std::wstring& filePath)
+{
+    // Check if file is a text file by checking its extension
+    const std::wstring extension = filePath.substr(filePath.find_last_of(L'.'));
+    const std::vector<std::wstring> textExtensions = {
+        L".txt", L".cpp", L".h", L".c", L".hpp", L".cxx", L".cc", L".cs", L".java", 
+        L".py", L".js", L".ts", L".html", L".htm", L".css", L".xml", L".json", 
+        L".sql", L".php", L".rb", L".pl", L".sh", L".bat", L".cmd", L".ini", 
+        L".cfg", L".conf", L".log", L".md", L".rst", L".csv", L".tex", L".yml", L".yaml"
+    };
+
+    // If file is not a recognized text file, return 0
+    if (std::find(textExtensions.begin(), textExtensions.end(), extension) == textExtensions.end())
+    {
+        return 0;
+    }
+
+    // Open file for reading
+    SmartPointer<HANDLE> hFile(CloseHandle, CreateFile(filePath.c_str(),
+        GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
+        FILE_ATTRIBUTE_NORMAL, nullptr));
+        
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
+        return 0;
+    }
+
+    // Get file size
+    LARGE_INTEGER fileSize;
+    if (GetFileSizeEx(hFile, &fileSize) == 0)
+    {
+        return 0;
+    }
+
+    // For very large files, return 0 to avoid performance issues
+    if (fileSize.QuadPart > 100 * 1024 * 1024) // 100MB limit
+    {
+        return 0;
+    }
+
+    // Map file to memory
+    SmartPointer<HANDLE> hMapping(CloseHandle, CreateFileMapping(hFile, nullptr, PAGE_READONLY, 0, 0, nullptr));
+    if (hMapping == nullptr)
+    {
+        return 0;
+    }
+
+    SmartPointer<LPVOID> pView(UnmapViewOfFile, MapViewOfFile(hMapping, FILE_MAP_READ, 0, 0, 0));
+    if (pView == nullptr)
+    {
+        return 0;
+    }
+
+    // Count lines by counting newline characters
+    ULONGLONG lineCount = 0;
+    const char* pData = static_cast<const char*>(pView);
+    const ULONGLONG size = static_cast<ULONGLONG>(fileSize.QuadPart);
+
+    for (ULONGLONG i = 0; i < size; ++i)
+    {
+        if (pData[i] == '\n')
+        {
+            lineCount++;
+        }
+        else if (pData[i] == '\r')
+        {
+            // Handle Windows line endings (\r\n)
+            if (i + 1 < size && pData[i + 1] == '\n')
+            {
+                i++; // Skip the \n
+            }
+            lineCount++;
+        }
+    }
+
+    // If file doesn't end with a newline, count the last line
+    if (size > 0 && pData[size - 1] != '\n' && pData[size - 1] != '\r')
+    {
+        lineCount++;
+    }
+
+    return lineCount;
+}

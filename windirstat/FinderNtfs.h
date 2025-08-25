@@ -82,6 +82,7 @@ public:
     std::wstring GetFileName() const override;
     ULONGLONG GetFileSizePhysical() const override;
     ULONGLONG GetFileSizeLogical() const override;
+    ULONGLONG GetFileLineCount() const override;
     FILETIME GetLastWriteTime() const override;
     std::wstring GetFilePath() const override;
 };

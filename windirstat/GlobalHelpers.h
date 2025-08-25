@@ -89,6 +89,7 @@ void DisplayError(const std::wstring& error);
 std::wstring TranslateError(HRESULT hr = static_cast<HRESULT>(GetLastError()));
 void DisableHibernate();
 bool IsHibernateEnabled();
+ULONGLONG CountFileLines(const std::wstring& filePath);
 bool ShellExecuteWrapper(const std::wstring& lpFile, const std::wstring& lpParameters = L"", const std::wstring& lpVerb = L"",
     HWND hwnd = *AfxGetMainWnd(), const std::wstring& lpDirector = L"", INT nShowCmd = SW_NORMAL);
 std::wstring GetBaseNameFromPath(const std::wstring& path);

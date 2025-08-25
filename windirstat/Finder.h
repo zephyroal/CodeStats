@@ -40,6 +40,7 @@ public:
     virtual inline DWORD GetAttributes() const = 0;
     virtual inline ULONGLONG GetFileSizePhysical() const = 0;
     virtual inline ULONGLONG GetFileSizeLogical() const = 0;
+    virtual inline ULONGLONG GetFileLineCount() const = 0;
     virtual inline FILETIME GetLastWriteTime() const = 0;
     virtual std::wstring GetFilePath() const = 0;
     virtual std::wstring GetFileName() const = 0;
