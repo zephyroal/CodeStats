@@ -183,6 +183,8 @@ public:
     void UpwardSubtractSizePhysical(ULONGLONG bytes);
     void UpwardAddSizeLogical(ULONGLONG bytes);
     void UpwardSubtractSizeLogical(ULONGLONG bytes);
+    void UpwardAddLineCount(ULONGLONG lines);
+    void UpwardSubtractLineCount(ULONGLONG lines);
     void UpwardAddReadJobs(ULONG count);
     void UpwardSubtractReadJobs(ULONG count);
     void UpwardUpdateLastChange(const FILETIME& t);
@@ -192,8 +194,10 @@ public:
     void ExtensionDataProcessChildren(bool remove = false) const;
     ULONGLONG GetSizePhysical() const;
     ULONGLONG GetSizeLogical() const;
+    ULONGLONG GetLineCount() const;
     void SetSizePhysical(ULONGLONG size);
     void SetSizeLogical(ULONGLONG size);
+    void SetLineCount(ULONGLONG lineCount);
     ULONG GetReadJobs() const;
     FILETIME GetLastChange() const;
     void SetLastChange(const FILETIME& t);
@@ -219,6 +223,7 @@ public:
     void SetDone();
     void SortItemsBySizePhysical() const;
     void SortItemsBySizeLogical() const;
+    void SortItemsByLineCount() const;
     ULONGLONG GetTicksWorked() const;
     void ResetScanStartTime() const;
     static void ScanItems(BlockingQueue<CItem*> *, FinderNtfsContext& contextNtfs);
@@ -310,6 +315,7 @@ private:
     std::unique_ptr<CHILDINFO> m_FolderInfo;   // Child information for non-files
     std::atomic<ULONGLONG> m_SizePhysical = 0; // Total physical size of self or subtree
     std::atomic<ULONGLONG> m_SizeLogical = 0;  // Total local size of self or subtree
+    std::atomic<ULONGLONG> m_LineCount = 0;    // Total line count of self or subtree
     ULONG m_Index = 0;                         // Index of item for special scan types
     USHORT m_Attributes = 0xFFFF;              // File or directory attributes of the item
     ITEMTYPE m_Type;                           // Indicates our type.

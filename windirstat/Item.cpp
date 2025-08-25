@@ -158,8 +158,8 @@ std::wstring CItem::GetText(const int subitem) const
 {
     switch (subitem)
     {
-    case COL_SIZE_PHYSICAL: return FormatBytes(GetSizePhysical());
-    case COL_SIZE_LOGICAL: return FormatBytes(GetSizeLogical());
+    case COL_SIZE_PHYSICAL: return IsType(IT_FILE) ? FormatCount(GetLineCount()) : FormatBytes(GetSizePhysical());
+    case COL_SIZE_LOGICAL: return IsType(IT_FILE) ? FormatCount(GetLineCount()) : FormatBytes(GetSizeLogical());
 
     case COL_NAME:
         if (IsType(IT_DRIVE))
@@ -296,11 +296,19 @@ int CItem::CompareSibling(const CTreeListItem* tlib, const int subitem) const
 
         case COL_SIZE_PHYSICAL:
         {
+            if (IsType(IT_FILE) && other->IsType(IT_FILE))
+            {
+                return usignum(GetLineCount(), other->GetLineCount());
+            }
             return usignum(GetSizePhysical(), other->GetSizePhysical());
         }
 
         case COL_SIZE_LOGICAL:
         {
+            if (IsType(IT_FILE) && other->IsType(IT_FILE))
+            {
+                return usignum(GetLineCount(), other->GetLineCount());
+            }
             return usignum(GetSizeLogical(), other->GetSizeLogical());
         }
 
@@ -494,8 +502,10 @@ void CItem::UpdateStatsFromDisk()
                 ExtensionDataRemove();
                 UpwardSubtractSizePhysical(m_SizePhysical);
                 UpwardSubtractSizeLogical(m_SizeLogical);
+                UpwardSubtractLineCount(m_LineCount);
                 UpwardAddSizePhysical(finder.GetFileSizePhysical());
                 UpwardAddSizeLogical(finder.GetFileSizeLogical());
+                UpwardAddLineCount(finder.GetFileLineCount());
                 ExtensionDataAdd();
             }
         }
@@ -674,6 +684,25 @@ void CItem::UpwardSubtractSizeLogical(const ULONGLONG bytes)
     }
 }
 
+void CItem::UpwardAddLineCount(const ULONGLONG lines)
+{
+    if (lines == 0) return;
+    for (auto p = this; p != nullptr; p = p->GetParent())
+    {
+        p->m_LineCount += lines;
+    }
+}
+
+void CItem::UpwardSubtractLineCount(const ULONGLONG lines)
+{
+    if (lines == 0) return;
+    for (auto p = this; p != nullptr; p = p->GetParent())
+    {
+        ASSERT(p->m_LineCount - lines >= 0);
+        p->m_LineCount -= lines;
+    }
+}
+
 void CItem::ExtensionDataAdd() const
 {
     if (!IsType(IT_FILE)) return;
@@ -770,6 +799,11 @@ ULONGLONG CItem::GetSizeLogical() const
     return m_SizeLogical;
 }
 
+ULONGLONG CItem::GetLineCount() const
+{
+    return m_LineCount;
+}
+
 void CItem::SetSizePhysical(const ULONGLONG size)
 {
     ASSERT(size >= 0);
@@ -780,6 +814,11 @@ void CItem::SetSizeLogical(const ULONGLONG size)
 {
     ASSERT(size >= 0);
     m_SizeLogical = size;
+}
+
+void CItem::SetLineCount(const ULONGLONG lineCount)
+{
+    m_LineCount = lineCount;
 }
 
 ULONG CItem::GetReadJobs() const
@@ -975,7 +1014,7 @@ void CItem::SetDone()
     // Sort and set finish time
     if (!IsLeaf())
     {
-        COptions::TreeMapUseLogical ? SortItemsBySizeLogical() : SortItemsBySizePhysical();
+        SortItemsByLineCount(); // Use line count sorting
         m_FolderInfo->m_Tfinish = static_cast<ULONG>(GetTickCount64() / 1000ull);
     }
 
@@ -1007,6 +1046,28 @@ void CItem::SortItemsBySizeLogical() const
     std::ranges::sort(m_FolderInfo->m_Children, [](auto item1, auto item2)
     {
         return item1->GetSizeLogical() > item2->GetSizeLogical(); // biggest first
+    });
+}
+
+void CItem::SortItemsByLineCount() const
+{
+    if (IsLeaf()) return;
+    
+    // sort by line count for proper treemap rendering
+    std::lock_guard guard(m_FolderInfo->m_Protect);
+    m_FolderInfo->m_Children.shrink_to_fit();
+    std::ranges::sort(m_FolderInfo->m_Children, [](auto item1, auto item2)
+    {
+        // For files, sort by line count; for directories, sort by size
+        if (item1->IsType(IT_FILE) && item2->IsType(IT_FILE))
+        {
+            return item1->GetLineCount() > item2->GetLineCount(); // most lines first
+        }
+        else
+        {
+            // Fall back to size-based sorting for directories or mixed types
+            return item1->GetSizePhysical() > item2->GetSizePhysical(); // biggest first
+        }
     });
 }
 
@@ -1430,6 +1491,7 @@ CItem* CItem::AddFile(const Finder& finder)
     const auto & child = new CItem(IT_FILE, finder.GetFileName());
     child->SetSizePhysical(finder.GetFileSizePhysical());
     child->SetSizeLogical(finder.GetFileSizeLogical());
+    child->SetLineCount(finder.GetFileLineCount());
     child->SetLastChange(finder.GetLastWriteTime());
     child->SetAttributes(finder.GetAttributes());
     child->SetReparseTag(finder.GetReparseTag());
