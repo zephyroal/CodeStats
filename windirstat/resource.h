@@ -130,6 +130,7 @@
 #define IDC_FILTERING_USE_REGEX         1240
 #define IDC_FILTERING_MIN_UNITS         1241
 #define IDC_LARGEST_FILE_COUNT          1242
+#define IDC_SHOW_LINE_COUNT_INSTEAD_OF_SIZE 1243
 #define IDC_SEARCH_REGEX                1243
 #define IDC_SEARCH_CASE                 1244
 #define IDC_SEARCH_TERM                 1245

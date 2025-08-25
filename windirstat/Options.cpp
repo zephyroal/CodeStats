@@ -74,6 +74,7 @@ Setting<bool> COptions::ShowTimeSpent(OptionsFileTree, L"ShowTimeSpent", true);
 Setting<bool> COptions::ShowToolBar(OptionsGeneral, L"ShowToolBar", true);
 Setting<bool> COptions::ShowTreeMap(OptionsTreeMap, L"ShowTreeMap", true);
 Setting<bool> COptions::ShowUnknown(OptionsGeneral, L"ShowUnknown", false);
+Setting<bool> COptions::ShowLineCountInsteadOfSize(OptionsGeneral, L"ShowLineCountInsteadOfSize", true);
 Setting<bool> COptions::SkipDupeDetectionCloudLinks(OptionsGeneral, L"SkipDupeDetectionCloudLinks", true);
 Setting<bool> COptions::SkipDupeDetectionCloudLinksWarning(OptionsGeneral, L"SkipDupeDetectionCloudLinksWarning", true);
 Setting<bool> COptions::TreeMapGrid(OptionsTreeMap, L"TreeMapGrid", (CTreeMap::GetDefaults().grid));

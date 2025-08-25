@@ -158,8 +158,12 @@ std::wstring CItem::GetText(const int subitem) const
 {
     switch (subitem)
     {
-    case COL_SIZE_PHYSICAL: return IsType(IT_FILE) ? FormatCount(GetLineCount()) : FormatBytes(GetSizePhysical());
-    case COL_SIZE_LOGICAL: return IsType(IT_FILE) ? FormatCount(GetLineCount()) : FormatBytes(GetSizeLogical());
+    case COL_SIZE_PHYSICAL: return IsType(IT_FILE) ? 
+        (COptions::ShowLineCountInsteadOfSize ? FormatCount(GetLineCount()) : FormatBytes(GetSizePhysical())) : 
+        FormatBytes(GetSizePhysical());
+    case COL_SIZE_LOGICAL: return IsType(IT_FILE) ? 
+        (COptions::ShowLineCountInsteadOfSize ? FormatCount(GetLineCount()) : FormatBytes(GetSizeLogical())) : 
+        FormatBytes(GetSizeLogical());
 
     case COL_NAME:
         if (IsType(IT_DRIVE))
@@ -298,7 +302,14 @@ int CItem::CompareSibling(const CTreeListItem* tlib, const int subitem) const
         {
             if (IsType(IT_FILE) && other->IsType(IT_FILE))
             {
-                return usignum(GetLineCount(), other->GetLineCount());
+                if (COptions::ShowLineCountInsteadOfSize)
+                {
+                    return usignum(GetLineCount(), other->GetLineCount());
+                }
+                else
+                {
+                    return usignum(GetSizePhysical(), other->GetSizePhysical());
+                }
             }
             return usignum(GetSizePhysical(), other->GetSizePhysical());
         }
@@ -307,7 +318,14 @@ int CItem::CompareSibling(const CTreeListItem* tlib, const int subitem) const
         {
             if (IsType(IT_FILE) && other->IsType(IT_FILE))
             {
-                return usignum(GetLineCount(), other->GetLineCount());
+                if (COptions::ShowLineCountInsteadOfSize)
+                {
+                    return usignum(GetLineCount(), other->GetLineCount());
+                }
+                else
+                {
+                    return usignum(GetSizeLogical(), other->GetSizeLogical());
+                }
             }
             return usignum(GetSizeLogical(), other->GetSizeLogical());
         }
@@ -1053,15 +1071,22 @@ void CItem::SortItemsByLineCount() const
 {
     if (IsLeaf()) return;
     
-    // sort by line count for proper treemap rendering
+    // sort by line count or size based on user preference
     std::lock_guard guard(m_FolderInfo->m_Protect);
     m_FolderInfo->m_Children.shrink_to_fit();
     std::ranges::sort(m_FolderInfo->m_Children, [](auto item1, auto item2)
     {
-        // For files, sort by line count; for directories, sort by size
+        // For files, sort by line count or size based on setting
         if (item1->IsType(IT_FILE) && item2->IsType(IT_FILE))
         {
-            return item1->GetLineCount() > item2->GetLineCount(); // most lines first
+            if (COptions::ShowLineCountInsteadOfSize)
+            {
+                return item1->GetLineCount() > item2->GetLineCount(); // most lines first
+            }
+            else
+            {
+                return item1->GetSizePhysical() > item2->GetSizePhysical(); // biggest first
+            }
         }
         else
         {
