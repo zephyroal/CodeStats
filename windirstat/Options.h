@@ -142,6 +142,7 @@ public:
     static Setting<bool> ShowToolBar;
     static Setting<bool> ShowTreeMap;
     static Setting<bool> ShowUnknown;
+    static Setting<bool> ShowLineCountInsteadOfSize;
     static Setting<bool> SkipDupeDetectionCloudLinks;
     static Setting<bool> SkipDupeDetectionCloudLinksWarning;
     static Setting<bool> TreeMapGrid;
