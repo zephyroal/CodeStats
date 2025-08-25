@@ -976,7 +976,8 @@ ULONGLONG CountFileLines(const std::wstring& filePath)
         L".txt", L".cpp", L".h", L".c", L".hpp", L".cxx", L".cc", L".cs", L".java", 
         L".py", L".js", L".ts", L".html", L".htm", L".css", L".xml", L".json", 
         L".sql", L".php", L".rb", L".pl", L".sh", L".bat", L".cmd", L".ini", 
-        L".cfg", L".conf", L".log", L".md", L".rst", L".csv", L".tex", L".yml", L".yaml"
+        L".cfg", L".conf", L".log", L".md", L".rst", L".csv", L".tex", L".yml", L".yaml",
+        L".cg", L".hlsl", L".glsl", L".vert", L".frag", L".geom", L".tesc", L".tese", L".comp"
     };
 
     // If file is not a recognized text file, return 0
