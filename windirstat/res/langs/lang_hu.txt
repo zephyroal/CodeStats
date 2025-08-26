@@ -166,6 +166,7 @@ IDS_PAGE_GENERAL_PORTABLE=Futtassa hordozható módban (a beállításokhoz hasz
 IDS_PAGE_GENERAL_SHOW_GRID=&Rácsozást mutat
 IDS_PAGE_GENERAL_SHOW_SIZES=Méretek GiB/MiB/KiB/bájt formát&umban
 IDS_PAGE_GENERAL_SHOW_STRIPES=&Sávok mutatása
+IDS_PAGE_GENERAL_SHOW_LINES=Sorok száma fájlméret helyett
 IDS_PAGE_GENERAL_TITLE=Általános
 IDS_PAGE_TREELIST_COLORS=Részfák &arányainak színei
 IDS_PAGE_TREELIST_OPTIONAL=Nem kötelező oszlopok

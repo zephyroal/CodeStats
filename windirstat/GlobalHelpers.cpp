@@ -1024,7 +1024,7 @@ ULONGLONG CountFileLines(const std::wstring& filePath)
 
     // Count lines by counting newline characters
     ULONGLONG lineCount = 0;
-    const char* pData = static_cast<const char*>(pView);
+    const char* pData = static_cast<const char*>(static_cast<LPVOID>(pView));
     const ULONGLONG size = static_cast<ULONGLONG>(fileSize.QuadPart);
 
     for (ULONGLONG i = 0; i < size; ++i)

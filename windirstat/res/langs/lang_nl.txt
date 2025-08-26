@@ -166,6 +166,7 @@ IDS_PAGE_GENERAL_PORTABLE=Uitvoeren in draagbare modus (gebruik het bestand WinD
 IDS_PAGE_GENERAL_SHOW_GRID=&Raster weergeven
 IDS_PAGE_GENERAL_SHOW_SIZES=Bestandsgrootte in GiB/MiB/KiB/Bytes formaat &weergeven
 IDS_PAGE_GENERAL_SHOW_STRIPES=&Strepen weergeven
+IDS_PAGE_GENERAL_SHOW_LINES=Toon regelaantal in plaats van bestandsgrootte
 IDS_PAGE_GENERAL_TITLE=Algemeen
 IDS_PAGE_TREELIST_COLORS=&Kleuren onderliggende percentages van tree
 IDS_PAGE_TREELIST_OPTIONAL=Optionele kolommen

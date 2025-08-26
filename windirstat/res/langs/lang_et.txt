@@ -166,6 +166,7 @@ IDS_PAGE_GENERAL_PORTABLE=Käivitage kaasaskantavas režiimis (seadete jaoks kas
 IDS_PAGE_GENERAL_SHOW_GRID=Näita &ruudustikus
 IDS_PAGE_GENERAL_SHOW_SIZES=&Näita suurust in GiB/MiB/KiB/baiti vormingus
 IDS_PAGE_GENERAL_SHOW_STRIPES=Näita v&arjundis
+IDS_PAGE_GENERAL_SHOW_LINES=Näita rea loendust faili suuruse asemel
 IDS_PAGE_GENERAL_TITLE=Üldine
 IDS_PAGE_TREELIST_COLORS=Alampuu esitus &värvides
 IDS_PAGE_TREELIST_OPTIONAL=Valikulised veerud
