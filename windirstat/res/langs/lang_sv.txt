@@ -166,6 +166,7 @@ IDS_PAGE_GENERAL_PORTABLE=Kör i portabelt läge (använd WinDirStat.ini för la
 IDS_PAGE_GENERAL_SHOW_GRID=Visa rutn&ät
 IDS_PAGE_GENERAL_SHOW_SIZES=Visa &storlekar i format GiB/MiB/KiB/Bytes
 IDS_PAGE_GENERAL_SHOW_STRIPES=Visa rän&der
+IDS_PAGE_GENERAL_SHOW_LINES=Visa radantal istället för filstorlek
 IDS_PAGE_GENERAL_TITLE=Allmänt
 IDS_PAGE_TREELIST_COLORS=Underträdets &procentfärger
 IDS_PAGE_TREELIST_OPTIONAL=Valfria kolumner

@@ -166,6 +166,7 @@ IDS_PAGE_GENERAL_PORTABLE=Esegui in modalità portatile (usa il file WinDirStat.
 IDS_PAGE_GENERAL_SHOW_GRID=Mostra &griglia
 IDS_PAGE_GENERAL_SHOW_SIZES=&Mostra dimensioni in formato GiB/MiB/KiB/Byte
 IDS_PAGE_GENERAL_SHOW_STRIPES=Mostra s&trisce
+IDS_PAGE_GENERAL_SHOW_LINES=Mostra conteggio righe invece della dimensione del file
 IDS_PAGE_GENERAL_TITLE=Generale
 IDS_PAGE_TREELIST_COLORS=&Colori percentuale sottoalbero
 IDS_PAGE_TREELIST_OPTIONAL=Colonne facoltative
