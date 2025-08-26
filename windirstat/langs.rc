@@ -528,6 +528,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_NEUTRAL
 
 STRINGTABLE
 BEGIN
+    IDS_PAGE_GENERAL_SHOW_LINES "Show line count instead of file size"
 END
 
 IDR_RT_LANG             RT_LANG                 "res\\langs\\lang_en.bin"
