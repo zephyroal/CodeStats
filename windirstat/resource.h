@@ -67,6 +67,7 @@
 #define IDC_TREECOL_SIZE_LOGICAL        1030
 #define IDC_EXCLUDE_SYMLINKS_DIRECTORY  1030
 #define IDC_FULL_ROW_SELECTION          1031
+#define IDC_TREECOL_LINE_COUNT          1031
 #define IDC_PORTABLE_MODE               1032
 #define IDC_EXCLUDE_HIDDEN_DIRECTORY    1032
 #define IDC_BACKUP_RESTORE              1033
@@ -130,6 +131,7 @@
 #define IDC_FILTERING_USE_REGEX         1240
 #define IDC_FILTERING_MIN_UNITS         1241
 #define IDC_LARGEST_FILE_COUNT          1242
+#define IDC_SHOW_LINE_COUNT_INSTEAD_OF_SIZE 1243
 #define IDC_SEARCH_REGEX                1243
 #define IDC_SEARCH_CASE                 1244
 #define IDC_SEARCH_TERM                 1245

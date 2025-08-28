@@ -49,6 +49,7 @@ protected:
     BOOL m_ListStripes = FALSE;
     BOOL m_ShowDeletionWarning = FALSE;
     BOOL m_ListFullRowSelection = FALSE;
+    BOOL m_ShowLineCountInsteadOfSize = FALSE;
 
     CComboBox m_Combo;
 

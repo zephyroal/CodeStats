@@ -131,6 +131,7 @@ public:
     static Setting<bool> ShowColumnFolders;
     static Setting<bool> ShowColumnItems;
     static Setting<bool> ShowColumnLastChange;
+    static Setting<bool> ShowColumnLineCount;
     static Setting<bool> ShowColumnOwner;
     static Setting<bool> ShowColumnSizeLogical;
     static Setting<bool> ShowColumnSizePhysical;
@@ -142,6 +143,7 @@ public:
     static Setting<bool> ShowToolBar;
     static Setting<bool> ShowTreeMap;
     static Setting<bool> ShowUnknown;
+    static Setting<bool> ShowLineCountInsteadOfSize;
     static Setting<bool> SkipDupeDetectionCloudLinks;
     static Setting<bool> SkipDupeDetectionCloudLinksWarning;
     static Setting<bool> TreeMapGrid;

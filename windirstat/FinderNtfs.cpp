@@ -19,6 +19,7 @@
 #include <stdafx.h>
 #include "FinderNtfs.h"
 #include "SmartPointer.h"
+#include "GlobalHelpers.h"
 
 #include <vector>
 #include <execution>
@@ -404,6 +405,21 @@ ULONGLONG FinderNtfs::GetFileSizePhysical() const
 ULONGLONG FinderNtfs::GetFileSizeLogical() const
 {
     return m_CurrentRecord->LogicalSize;
+}
+
+ULONGLONG FinderNtfs::GetFileLineCount() const
+{
+    // For NTFS, we need to calculate line count by reading the file
+    // Only do this for files, not directories
+    if ((m_CurrentRecord->Attributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
+    {
+        return 0;
+    }
+    
+    // Use the CountFileLines function we created earlier
+    ULONGLONG lineCount = CountFileLines(GetFilePath());
+    
+    return lineCount;
 }
 
 FILETIME FinderNtfs::GetLastWriteTime() const

@@ -137,6 +137,13 @@ bool FinderBasic::FindNext()
                 m_CurrentInfo->AllocationSize.HighPart = static_cast<LONG>(highPart);
             }
         }
+
+        // Calculate line count for text files
+        m_LineCount = 1;
+        if ((m_CurrentInfo->FileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0)
+        {
+            m_LineCount = CountFileLines(GetFilePathLong());
+        }
     }
 
     m_Firstrun = false;

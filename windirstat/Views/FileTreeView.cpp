@@ -81,6 +81,8 @@ void CFileTreeView::CreateColumns(const bool all)
     while (m_Control.DeleteColumn(COL_OPTIONAL_START)) {}
 
     // add optional columns based on settings
+    if (COptions::ShowColumnLineCount)
+        m_Control.InsertColumn(CHAR_MAX, Localization::Lookup(IDS_COL_LINE_COUNT).c_str(), LVCFMT_RIGHT, 90, COL_LINE_COUNT);
     if (COptions::ShowColumnSizePhysical)
         m_Control.InsertColumn(CHAR_MAX, Localization::Lookup(IDS_COL_SIZE_PHYSICAL).c_str(), LVCFMT_RIGHT, 90, COL_SIZE_PHYSICAL);
     if (COptions::ShowColumnSizeLogical)

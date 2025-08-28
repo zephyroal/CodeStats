@@ -63,6 +63,7 @@ Setting<bool> COptions::ShowColumnFiles(OptionsFileTree, L"ShowColumnFiles", tru
 Setting<bool> COptions::ShowColumnFolders(OptionsFileTree, L"ShowColumnFolders", false);
 Setting<bool> COptions::ShowColumnItems(OptionsFileTree, L"ShowColumnItems", false);
 Setting<bool> COptions::ShowColumnLastChange(OptionsFileTree, L"ShowColumnLastChange", true);
+Setting<bool> COptions::ShowColumnLineCount(OptionsFileTree, L"ShowColumnLineCount", true);
 Setting<bool> COptions::ShowColumnOwner(OptionsFileTree, L"ShowColumnOwner", false);
 Setting<bool> COptions::ShowColumnSizeLogical(OptionsFileTree, L"ShowColumnSizeLogical", true);
 Setting<bool> COptions::ShowColumnSizePhysical(OptionsFileTree, L"ShowColumnSizePhysical", true);
@@ -74,6 +75,7 @@ Setting<bool> COptions::ShowTimeSpent(OptionsFileTree, L"ShowTimeSpent", true);
 Setting<bool> COptions::ShowToolBar(OptionsGeneral, L"ShowToolBar", true);
 Setting<bool> COptions::ShowTreeMap(OptionsTreeMap, L"ShowTreeMap", true);
 Setting<bool> COptions::ShowUnknown(OptionsGeneral, L"ShowUnknown", false);
+Setting<bool> COptions::ShowLineCountInsteadOfSize(OptionsGeneral, L"ShowLineCountInsteadOfSize", true);
 Setting<bool> COptions::SkipDupeDetectionCloudLinks(OptionsGeneral, L"SkipDupeDetectionCloudLinks", true);
 Setting<bool> COptions::SkipDupeDetectionCloudLinksWarning(OptionsGeneral, L"SkipDupeDetectionCloudLinksWarning", true);
 Setting<bool> COptions::TreeMapGrid(OptionsTreeMap, L"TreeMapGrid", (CTreeMap::GetDefaults().grid));
