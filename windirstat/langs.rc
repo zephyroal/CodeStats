@@ -1,6 +1,5 @@
 // Microsoft Visual C++ generated resource script.
 //
-#include "resource.h"
 #include "langs.h"
 
 #define APSTUDIO_READONLY_SYMBOLS
@@ -525,10 +524,6 @@ LANGUAGE LANG_ENGLISH, SUBLANG_NEUTRAL
 //
 // RT_LANG
 //
-
-STRINGTABLE
-BEGIN
-END
 
 IDR_RT_LANG             RT_LANG                 "res\\langs\\lang_en.bin"
 
