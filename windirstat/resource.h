@@ -206,7 +206,6 @@
 #define IDS_FILTER_EXAMPLE_DIRS_REGEX   57352
 #define IDC_FAST_SCAN_CHECKBOX          57353
 #define IDD_SEARCH                      57354
-#define IDS_PAGE_GENERAL_SHOW_LINES     57355
 
 // Next default values for new objects
 // 
