@@ -1086,13 +1086,17 @@ void CItem::SortItemsByLineCount() const
         
         // 获取第一项的TreeMap大小（与TmiGetSize()保持完全一致）
         if (COptions::ShowLineCountInsteadOfSize)
+        {
             size1 = item1->GetLineCount();
+        }
         else
             size1 = item1->GetSizePhysical();
             
         // 获取第二项的TreeMap大小（与TmiGetSize()保持完全一致）
         if (COptions::ShowLineCountInsteadOfSize)
+        {
             size2 = item2->GetLineCount();
+        }
         else
             size2 = item2->GetSizePhysical();
         

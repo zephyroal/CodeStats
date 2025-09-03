@@ -139,7 +139,7 @@ bool FinderBasic::FindNext()
         }
 
         // Calculate line count for text files
-        m_LineCount = 0;
+        m_LineCount = 1;
         if ((m_CurrentInfo->FileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0)
         {
             m_LineCount = CountFileLines(GetFilePathLong());
@@ -240,11 +240,6 @@ bool FinderBasic::IsDots() const
 DWORD FinderBasic::GetReparseTag() const
 {
     return m_ReparseTag;
-}
-
-ULONGLONG FinderBasic::GetFileLineCount() const
-{
-    return m_LineCount;
 }
 
 bool FinderBasic::DoesFileExist(const std::wstring& folder, const std::wstring& file)

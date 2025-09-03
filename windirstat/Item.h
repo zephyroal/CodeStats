@@ -160,7 +160,7 @@ public:
     ULONGLONG TmiGetSize() const override
     {
         // TreeMap大小计算逻辑，必须与SortItemsByLineCount中的排序逻辑保持完全一致
-        // 当启用行数显示选项且为文件类型时，使用行数作为TreeMap大小
+        // 当启用行数显示选项时，使用行数作为TreeMap大小
         if (COptions::ShowLineCountInsteadOfSize)
         {
             return GetLineCount();

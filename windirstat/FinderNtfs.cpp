@@ -417,7 +417,15 @@ ULONGLONG FinderNtfs::GetFileLineCount() const
     }
     
     // Use the CountFileLines function we created earlier
-    return CountFileLines(GetFilePath());
+    ULONGLONG lineCount = CountFileLines(GetFilePath());
+    
+    // 在行数显示模式下，避免0值导致文件在TreeMap中消失
+    if (COptions::ShowLineCountInsteadOfSize && lineCount == 0)
+    {
+        return 1;
+    }
+    
+    return lineCount;
 }
 
 FILETIME FinderNtfs::GetLastWriteTime() const
