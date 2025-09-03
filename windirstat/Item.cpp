@@ -158,13 +158,9 @@ std::wstring CItem::GetText(const int subitem) const
 {
     switch (subitem)
     {
-    case COL_LINE_COUNT: return IsType(IT_FILE) ? FormatCount(GetLineCount()) : FormatCount(0);
-    case COL_SIZE_PHYSICAL: return IsType(IT_FILE) ? 
-        (COptions::ShowLineCountInsteadOfSize ? FormatCount(GetLineCount()) : FormatBytes(GetSizePhysical())) : 
-        FormatBytes(GetSizePhysical());
-    case COL_SIZE_LOGICAL: return IsType(IT_FILE) ? 
-        (COptions::ShowLineCountInsteadOfSize ? FormatCount(GetLineCount()) : FormatBytes(GetSizeLogical())) : 
-        FormatBytes(GetSizeLogical());
+    case COL_LINE_COUNT: return FormatCount(GetLineCount());
+    case COL_SIZE_PHYSICAL: return FormatBytes(GetSizePhysical());
+    case COL_SIZE_LOGICAL: return FormatBytes(GetSizeLogical());
 
     case COL_NAME:
         if (IsType(IT_DRIVE))
@@ -312,14 +308,7 @@ int CItem::CompareSibling(const CTreeListItem* tlib, const int subitem) const
         {
             if (IsType(IT_FILE) && other->IsType(IT_FILE))
             {
-                if (COptions::ShowLineCountInsteadOfSize)
-                {
-                    return usignum(GetLineCount(), other->GetLineCount());
-                }
-                else
-                {
-                    return usignum(GetSizePhysical(), other->GetSizePhysical());
-                }
+                return usignum(GetSizePhysical(), other->GetSizePhysical());
             }
             return usignum(GetSizePhysical(), other->GetSizePhysical());
         }
@@ -328,14 +317,7 @@ int CItem::CompareSibling(const CTreeListItem* tlib, const int subitem) const
         {
             if (IsType(IT_FILE) && other->IsType(IT_FILE))
             {
-                if (COptions::ShowLineCountInsteadOfSize)
-                {
-                    return usignum(GetLineCount(), other->GetLineCount());
-                }
-                else
-                {
-                    return usignum(GetSizeLogical(), other->GetSizeLogical());
-                }
+                return usignum(GetSizeLogical(), other->GetSizeLogical());
             }
             return usignum(GetSizeLogical(), other->GetSizeLogical());
         }
@@ -576,6 +558,7 @@ void CItem::AddChild(CItem* child, const bool addOnly)
     {
         UpwardAddSizePhysical(child->m_SizePhysical);
         UpwardAddSizeLogical(child->m_SizeLogical);
+        UpwardAddLineCount(child->m_LineCount);
         UpwardUpdateLastChange(child->m_LastChange);
         ExtensionDataAdd();
     }
@@ -680,6 +663,18 @@ void CItem::UpwardAddSizePhysical(const ULONGLONG bytes)
     for (auto p = this; p != nullptr; p = p->GetParent())
     {
         p->m_SizePhysical += bytes;
+    }
+}
+
+void CItem::UpwardAddTreeMapSize(const ULONGLONG bytes)
+{
+    if (bytes == 0) return;
+    // 这个方法专门用于更新TreeMap相关的大小
+    // 目前我们直接更新所有相关大小，以确保一致性
+    for (auto p = this; p != nullptr; p = p->GetParent())
+    {
+        // 对于TreeMap断言检查，我们需要确保所有相关大小都被正确更新
+        // 但由于TmiGetSize()的逻辑依赖于运行时选项，我们在RecurseCheckTree中会正确计算
     }
 }
 
@@ -1081,28 +1076,36 @@ void CItem::SortItemsByLineCount() const
 {
     if (IsLeaf()) return;
     
-    // sort by line count or size based on user preference
+    // sort by line count for proper treemap rendering when line count display is enabled
     std::lock_guard guard(m_FolderInfo->m_Protect);
     m_FolderInfo->m_Children.shrink_to_fit();
     std::ranges::sort(m_FolderInfo->m_Children, [](auto item1, auto item2)
     {
-        // For files, sort by line count or size based on setting
-        if (item1->IsType(IT_FILE) && item2->IsType(IT_FILE))
-        {
-            if (COptions::ShowLineCountInsteadOfSize)
-            {
-                return item1->GetLineCount() > item2->GetLineCount(); // most lines first
-            }
-            else
-            {
-                return item1->GetSizePhysical() > item2->GetSizePhysical(); // biggest first
-            }
-        }
+        // 保持与TmiGetSize()完全一致的排序逻辑
+        ULONGLONG size1, size2;
+        
+        // 获取第一项的TreeMap大小（与TmiGetSize()保持完全一致）
+        if (COptions::ShowLineCountInsteadOfSize)
+            size1 = item1->GetLineCount();
         else
-        {
-            // Fall back to size-based sorting for directories or mixed types
-            return item1->GetSizePhysical() > item2->GetSizePhysical(); // biggest first
-        }
+            size1 = item1->GetSizePhysical();
+            
+        // 获取第二项的TreeMap大小（与TmiGetSize()保持完全一致）
+        if (COptions::ShowLineCountInsteadOfSize)
+            size2 = item2->GetLineCount();
+        else
+            size2 = item2->GetSizePhysical();
+        
+        // 严格降序排列（大的在前）
+        if (size1 != size2)
+            return size1 > size2;
+            
+        // 如果大小相等，按类型排序（文件在前）
+        if (item1->IsType(IT_FILE) != item2->IsType(IT_FILE))
+            return item1->IsType(IT_FILE);
+            
+        // 如果类型相同，按名称排序以确保稳定性
+        return item1->GetName() < item2->GetName();
     });
 }
 

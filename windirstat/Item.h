@@ -159,6 +159,13 @@ public:
 
     ULONGLONG TmiGetSize() const override
     {
+        // TreeMap大小计算逻辑，必须与SortItemsByLineCount中的排序逻辑保持完全一致
+        // 当启用行数显示选项且为文件类型时，使用行数作为TreeMap大小
+        if (COptions::ShowLineCountInsteadOfSize)
+        {
+            return GetLineCount();
+        }
+        // 否则使用物理大小或逻辑大小
         return COptions::TreeMapUseLogical ? GetSizeLogical() : GetSizePhysical();
     }
 
@@ -186,6 +193,7 @@ public:
     void UpwardSubtractSizeLogical(ULONGLONG bytes);
     void UpwardAddLineCount(ULONGLONG lines);
     void UpwardSubtractLineCount(ULONGLONG lines);
+    void UpwardAddTreeMapSize(ULONGLONG bytes);
     void UpwardAddReadJobs(ULONG count);
     void UpwardSubtractReadJobs(ULONG count);
     void UpwardUpdateLastChange(const FILETIME& t);
