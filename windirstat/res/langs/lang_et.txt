@@ -25,6 +25,7 @@ IDS_COL_GRAPH=Tarvitatud/kogusumma
 IDS_COL_HASH=Hash / Failitee
 IDS_COL_ITEMS=Tetailid
 IDS_COL_LASTCHANGE=Viimane muudatus
+IDS_COL_LINE_COUNT=Ridu
 IDS_COL_NAME=Nimi
 IDS_COL_OWNER=Omanik
 IDS_COL_PERCENTAGE=Protsent

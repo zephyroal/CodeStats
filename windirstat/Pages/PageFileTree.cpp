@@ -34,6 +34,7 @@ void CPageFileTree::DoDataExchange(CDataExchange* pDX)
     DDX_Check(pDX, IDC_PACMANANIMATION, m_PacmanAnimation);
     DDX_Check(pDX, IDC_SHOWTIMESPENT, m_ShowTimeSpent);
     DDX_Check(pDX, IDC_TREECOL_FOLDERS, m_ShowColumnFolders);
+    DDX_Check(pDX, IDC_TREECOL_LINE_COUNT, m_ShowColumnLineCount);
     DDX_Check(pDX, IDC_TREECOL_SIZE_PHYSICAL, m_ShowColumnSizePhysical);
     DDX_Check(pDX, IDC_TREECOL_SIZE_LOGICAL, m_ShowColumnSizeLogical);
     DDX_Check(pDX, IDC_TREECOL_ITEMS, m_ShowColumnItems);
@@ -84,6 +85,7 @@ BOOL CPageFileTree::OnInitDialog()
     m_ShowColumnFiles = COptions::ShowColumnFiles;
     m_ShowColumnAttributes = COptions::ShowColumnAttributes;
     m_ShowColumnLastChange = COptions::ShowColumnLastChange;
+    m_ShowColumnLineCount = COptions::ShowColumnLineCount;
     m_ShowColumnOwner = COptions::ShowColumnOwner;
     m_ShowColumnSizePhysical = COptions::ShowColumnSizePhysical;
     m_ShowColumnSizeLogical = COptions::ShowColumnSizeLogical;
@@ -114,6 +116,7 @@ void CPageFileTree::OnOK()
         COptions::ShowColumnFiles != (FALSE != m_ShowColumnFiles) ||
         COptions::ShowColumnAttributes != (FALSE != m_ShowColumnAttributes) ||
         COptions::ShowColumnLastChange != (FALSE != m_ShowColumnLastChange) ||
+        COptions::ShowColumnLineCount != (FALSE != m_ShowColumnLineCount) ||
         COptions::ShowColumnOwner != (FALSE != m_ShowColumnOwner) ||
         COptions::ShowColumnSizePhysical != (FALSE != m_ShowColumnSizePhysical) ||
         COptions::ShowColumnSizeLogical != (FALSE != m_ShowColumnSizeLogical);
@@ -126,6 +129,7 @@ void CPageFileTree::OnOK()
     COptions::ShowColumnFiles = (FALSE != m_ShowColumnFiles);
     COptions::ShowColumnAttributes = (FALSE != m_ShowColumnAttributes);
     COptions::ShowColumnLastChange = (FALSE != m_ShowColumnLastChange);
+    COptions::ShowColumnLineCount = (FALSE != m_ShowColumnLineCount);
     COptions::ShowColumnOwner = (FALSE != m_ShowColumnOwner);
     COptions::ShowColumnSizePhysical = (FALSE != m_ShowColumnSizePhysical);
     COptions::ShowColumnSizeLogical = (FALSE != m_ShowColumnSizeLogical);

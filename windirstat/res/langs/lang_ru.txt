@@ -25,6 +25,7 @@ IDS_COL_GRAPH=Занято/Всего
 IDS_COL_HASH=Префикс хеша
 IDS_COL_ITEMS=Элементы
 IDS_COL_LASTCHANGE=Дата изменения
+IDS_COL_LINE_COUNT=Строки
 IDS_COL_NAME=Имя
 IDS_COL_OWNER=Имя
 IDS_COL_PERCENTAGE=Доля

@@ -25,6 +25,7 @@ IDS_COL_GRAPH=Używane/Pojemność
 IDS_COL_HASH=Prefiks skrótu
 IDS_COL_ITEMS=Liczba elementów
 IDS_COL_LASTCHANGE=Ostatnia modyfikacja
+IDS_COL_LINE_COUNT=Wiersze
 IDS_COL_NAME=Nazwa
 IDS_COL_OWNER=Właściciel
 IDS_COL_PERCENTAGE=Procentowo

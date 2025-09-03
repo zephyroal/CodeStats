@@ -25,6 +25,7 @@ IDS_COL_GRAPH=Gebruikt/Totaal
 IDS_COL_HASH=Hashvoorvoegsel
 IDS_COL_ITEMS=Items
 IDS_COL_LASTCHANGE=Laatste wijziging
+IDS_COL_LINE_COUNT=Rijen
 IDS_COL_NAME=Naam
 IDS_COL_OWNER=Eigenaar
 IDS_COL_PERCENTAGE=Percentage
