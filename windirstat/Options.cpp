@@ -63,6 +63,7 @@ Setting<bool> COptions::ShowColumnFiles(OptionsFileTree, L"ShowColumnFiles", tru
 Setting<bool> COptions::ShowColumnFolders(OptionsFileTree, L"ShowColumnFolders", false);
 Setting<bool> COptions::ShowColumnItems(OptionsFileTree, L"ShowColumnItems", false);
 Setting<bool> COptions::ShowColumnLastChange(OptionsFileTree, L"ShowColumnLastChange", true);
+Setting<bool> COptions::ShowColumnLineCount(OptionsFileTree, L"ShowColumnLineCount", true);
 Setting<bool> COptions::ShowColumnOwner(OptionsFileTree, L"ShowColumnOwner", false);
 Setting<bool> COptions::ShowColumnSizeLogical(OptionsFileTree, L"ShowColumnSizeLogical", true);
 Setting<bool> COptions::ShowColumnSizePhysical(OptionsFileTree, L"ShowColumnSizePhysical", true);

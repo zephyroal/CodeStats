@@ -158,6 +158,7 @@ std::wstring CItem::GetText(const int subitem) const
 {
     switch (subitem)
     {
+    case COL_LINE_COUNT: return IsType(IT_FILE) ? FormatCount(GetLineCount()) : FormatCount(0);
     case COL_SIZE_PHYSICAL: return IsType(IT_FILE) ? 
         (COptions::ShowLineCountInsteadOfSize ? FormatCount(GetLineCount()) : FormatBytes(GetSizePhysical())) : 
         FormatBytes(GetSizePhysical());
@@ -296,6 +297,15 @@ int CItem::CompareSibling(const CTreeListItem* tlib, const int subitem) const
         case COL_PERCENTAGE:
         {
             return signum(GetFraction() - other->GetFraction());
+        }
+
+        case COL_LINE_COUNT:
+        {
+            if (IsType(IT_FILE) && other->IsType(IT_FILE))
+            {
+                return usignum(GetLineCount(), other->GetLineCount());
+            }
+            return usignum(GetLineCount(), other->GetLineCount());
         }
 
         case COL_SIZE_PHYSICAL:

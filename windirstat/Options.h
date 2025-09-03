@@ -131,6 +131,7 @@ public:
     static Setting<bool> ShowColumnFolders;
     static Setting<bool> ShowColumnItems;
     static Setting<bool> ShowColumnLastChange;
+    static Setting<bool> ShowColumnLineCount;
     static Setting<bool> ShowColumnOwner;
     static Setting<bool> ShowColumnSizeLogical;
     static Setting<bool> ShowColumnSizePhysical;

@@ -25,6 +25,7 @@ IDS_COL_GRAPH=Käytetty/Yhteensä
 IDS_COL_HASH=Hashin etuliite
 IDS_COL_ITEMS=Kohteita
 IDS_COL_LASTCHANGE=Edellinen muutos
+IDS_COL_LINE_COUNT=Rivit
 IDS_COL_NAME=Nimi
 IDS_COL_OWNER=Omistaja
 IDS_COL_PERCENTAGE=Osuus

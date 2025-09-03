@@ -25,6 +25,7 @@ IDS_COL_GRAPH=Usado/Total
 IDS_COL_HASH=Prefixo de hash
 IDS_COL_ITEMS=Itens
 IDS_COL_LASTCHANGE=Última Alteração
+IDS_COL_LINE_COUNT=Linhas
 IDS_COL_NAME=Nome
 IDS_COL_OWNER=Proprietário
 IDS_COL_PERCENTAGE=Percentual

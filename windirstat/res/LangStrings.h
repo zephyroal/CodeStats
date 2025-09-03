@@ -27,6 +27,7 @@ constexpr std::wstring_view IDS_COL_GRAPH = L"IDS_COL_GRAPH";
 constexpr std::wstring_view IDS_COL_HASH = L"IDS_COL_HASH";
 constexpr std::wstring_view IDS_COL_ITEMS = L"IDS_COL_ITEMS";
 constexpr std::wstring_view IDS_COL_LASTCHANGE = L"IDS_COL_LASTCHANGE";
+constexpr std::wstring_view IDS_COL_LINE_COUNT = L"IDS_COL_LINE_COUNT";
 constexpr std::wstring_view IDS_COL_NAME = L"IDS_COL_NAME";
 constexpr std::wstring_view IDS_COL_OWNER = L"IDS_COL_OWNER";
 constexpr std::wstring_view IDS_COL_PERCENTAGE = L"IDS_COL_PERCENTAGE";

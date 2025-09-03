@@ -46,6 +46,7 @@ protected:
     BOOL m_ShowColumnFiles = FALSE;
     BOOL m_ShowColumnAttributes = FALSE;
     BOOL m_ShowColumnLastChange = FALSE;
+    BOOL m_ShowColumnLineCount = FALSE;
     BOOL m_ShowColumnOwner = FALSE;
     BOOL m_ShowColumnSizePhysical = FALSE;
     BOOL m_ShowColumnSizeLogical = FALSE;

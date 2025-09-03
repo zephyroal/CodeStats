@@ -25,6 +25,7 @@ IDS_COL_GRAPH=Využito/Celkem
 IDS_COL_HASH=Hashový prefix
 IDS_COL_ITEMS=Položky
 IDS_COL_LASTCHANGE=Poslední změna
+IDS_COL_LINE_COUNT=Řádky
 IDS_COL_NAME=Název
 IDS_COL_OWNER=Vlastník
 IDS_COL_PERCENTAGE=Podíl
