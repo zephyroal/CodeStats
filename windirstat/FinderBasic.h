@@ -49,7 +49,7 @@ class FinderBasic final : public Finder
     HANDLE m_Handle = nullptr;
     DWORD m_InitialAttributes = INVALID_FILE_ATTRIBUTES;
     DWORD m_ReparseTag = 0;
-    ULONGLONG m_LineCount = 0;
+    ULONGLONG m_LineCount = 1;
     bool m_Firstrun = true;
 
 public:
@@ -65,7 +65,10 @@ public:
     inline std::wstring GetFileName() const override;
     inline ULONGLONG GetFileSizePhysical() const override;
     inline ULONGLONG GetFileSizeLogical() const override;
-    inline ULONGLONG GetFileLineCount() const override;
+    inline ULONGLONG GetFileLineCount() const override
+    {
+        return m_LineCount;
+    }
     inline FILETIME GetLastWriteTime() const override;
     std::wstring GetFilePath() const override;
     inline DWORD GetReparseTag() const override;
