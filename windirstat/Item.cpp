@@ -654,18 +654,6 @@ void CItem::UpwardAddSizePhysical(const ULONGLONG bytes)
     }
 }
 
-void CItem::UpwardAddTreeMapSize(const ULONGLONG bytes)
-{
-    if (bytes == 0) return;
-    // 这个方法专门用于更新TreeMap相关的大小
-    // 目前我们直接更新所有相关大小，以确保一致性
-    for (auto p = this; p != nullptr; p = p->GetParent())
-    {
-        // 对于TreeMap断言检查，我们需要确保所有相关大小都被正确更新
-        // 但由于TmiGetSize()的逻辑依赖于运行时选项，我们在RecurseCheckTree中会正确计算
-    }
-}
-
 void CItem::UpwardSubtractSizePhysical(const ULONGLONG bytes)
 {
     if (bytes == 0) return;
@@ -1025,7 +1013,7 @@ void CItem::SetDone()
     // Sort and set finish time
     if (!IsLeaf())
     {
-        if (COptions::ShowLineCountInsteadOfSize)
+        if (COptions::TreeMapUseLineCount)
             SortItemsByLineCount(); // Use line count sorting
         else
             COptions::TreeMapUseLogical ? SortItemsBySizeLogical() : SortItemsBySizePhysical();
@@ -1073,24 +1061,9 @@ void CItem::SortItemsByLineCount() const
     m_FolderInfo->m_Children.shrink_to_fit();
     std::ranges::sort(m_FolderInfo->m_Children, [](auto item1, auto item2)
     {
-        // 保持与TmiGetSize()完全一致的排序逻辑
-        ULONGLONG size1, size2;
-        
-        // 获取第一项的TreeMap大小（与TmiGetSize()保持完全一致）
-        if (COptions::ShowLineCountInsteadOfSize)
-        {
-            size1 = item1->GetLineCount();
-        }
-        else
-            size1 = item1->GetSizePhysical();
-            
-        // 获取第二项的TreeMap大小（与TmiGetSize()保持完全一致）
-        if (COptions::ShowLineCountInsteadOfSize)
-        {
-            size2 = item2->GetLineCount();
-        }
-        else
-            size2 = item2->GetSizePhysical();
+        // 直接使用TmiGetSize()确保排序与显示完全一致
+        const ULONGLONG size1 = item1->TmiGetSize();
+        const ULONGLONG size2 = item2->TmiGetSize();
         
         // 严格降序排列（大的在前）
         if (size1 != size2)

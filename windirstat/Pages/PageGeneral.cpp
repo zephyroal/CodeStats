@@ -49,7 +49,7 @@ void CPageGeneral::DoDataExchange(CDataExchange* pDX)
     DDX_Check(pDX, IDC_SHOW_STRIPES, m_ListStripes);
     DDX_Check(pDX, IDC_SIZE_SUFFIXES, m_SizeSuffixesFormat);
     DDX_Check(pDX, IDC_USE_WINDOWS_LOCALE, m_UseWindowsLocale);
-    DDX_Check(pDX, IDC_SHOW_LINE_COUNT_INSTEAD_OF_SIZE, m_ShowLineCountInsteadOfSize);
+    DDX_Check(pDX, IDC_SHOW_LINE_COUNT_INSTEAD_OF_SIZE, m_TreeMapUseLineCount);
     DDX_Control(pDX, IDC_COMBO, m_Combo);
 }
 
@@ -79,7 +79,7 @@ BOOL CPageGeneral::OnInitDialog()
     m_ShowDeletionWarning = COptions::ShowDeleteWarning;
     m_ListFullRowSelection = COptions::ListFullRowSelection;
     m_UseWindowsLocale = COptions::UseWindowsLocaleSetting;
-    m_ShowLineCountInsteadOfSize = COptions::ShowLineCountInsteadOfSize;
+    m_TreeMapUseLineCount = COptions::TreeMapUseLineCount;
     m_PortableMode = CDirStatApp::InPortableMode();
 
     for (const auto & language : Localization::GetLanguageList())
@@ -113,7 +113,7 @@ void CPageGeneral::OnOK()
     COptions::ListStripes = (FALSE != m_ListStripes);
     COptions::ShowDeleteWarning = (FALSE != m_ShowDeletionWarning);
     COptions::ListFullRowSelection = (FALSE != m_ListFullRowSelection);
-    COptions::ShowLineCountInsteadOfSize = (FALSE != m_ShowLineCountInsteadOfSize);
+    COptions::TreeMapUseLineCount = (FALSE != m_TreeMapUseLineCount);
     if (!CDirStatApp::Get()->SetPortableMode(m_PortableMode))
     {
         DisplayError(L"Could not toggle WinDirStat portable mode. Check your permissions.");
