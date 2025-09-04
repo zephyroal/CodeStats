@@ -1025,7 +1025,11 @@ void CItem::SetDone()
     // Sort and set finish time
     if (!IsLeaf())
     {
-        SortItemsByLineCount(); // Use line count sorting
+        if (COptions::ShowLineCountInsteadOfSize)
+            SortItemsByLineCount(); // Use line count sorting
+        else
+            COptions::TreeMapUseLogical ? SortItemsBySizeLogical() : SortItemsBySizePhysical();
+
         m_FolderInfo->m_Tfinish = static_cast<ULONG>(GetTickCount64() / 1000ull);
     }
 
