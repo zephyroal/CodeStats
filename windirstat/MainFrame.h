@@ -1,30 +1,27 @@
 ﻿// WinDirStat - Directory Statistics
 // Copyright © WinDirStat Team
 //
-// This program is free software; you can redistribute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
+// the Free Software Foundation, either version 2 of the License, or
+// at your option any later version.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
 #pragma once
 
+#include "pch.h"
 #include "PacMan.h"
-#include "Item.h"
 #include "FileTabbedView.h"
 
-#include <functional>
-
-class CMySplitterWnd;
+class CWdsSplitterWnd;
 class CMainFrame;
 
 class CFileTreeView;
@@ -38,88 +35,93 @@ class CExtensionView;
 // Although these windows can lose the real focus, for instance
 // when a dialog box is opened, the logical focus will not be lost.
 //
-enum LOGICAL_FOCUS : std::uint8_t
+enum LOGICAL_FOCUS : uint8_t
 {
     LF_NONE = 0,
-    LF_FILETREE = 1 << 0,
-    LF_DUPELIST = 1 << 1,
-    LF_TOPLIST = 1 << 2,
-    LF_SEARCHLIST = 1 << 3,
-    LF_EXTLIST = 1 << 4,
+    LF_FILETREE,
+    LF_DUPELIST,
+    LF_TOPLIST,
+    LF_SEARCHLIST,
+    LF_WATCHERLIST,
+    LF_EXTLIST,
 };
 
 //
-// COptionsPropertySheet. The options dialog.
+// COptionsPropertySheet.
 //
-class COptionsPropertySheet final : public CPropertySheet
+class COptionsPropertySheet final : public CMFCPropertySheet
 {
     DECLARE_DYNAMIC(COptionsPropertySheet)
 
     COptionsPropertySheet();
-    void SetLanguageChanged(bool changed);
+    void SetRestartRequired(bool changed);
     BOOL OnInitDialog() override;
+    BOOL PreTranslateMessage(MSG* pMsg) override;
+    static bool ShowSettings(int initialPage = -1);
 
-    bool m_RestartApplication = false; // [out]
+    bool m_restartApplication = false; // [out]
+    int m_initialPage = -1;
 
 protected:
     BOOL OnCommand(WPARAM wParam, LPARAM lParam) override;
+    afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+    afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 
-    bool m_LanguageChanged = false;
-    bool m_AlreadyAsked = false;
+    bool m_restartRequest = false;
+    bool m_alreadyAsked = false;
+
+    DECLARE_MESSAGE_MAP()
 };
 
 //
-// CMySplitterWnd. A CSplitterWnd with 2 columns or rows, which
+// CWdsSplitterWnd. A CSplitterWnd with 2 columns or rows, which
 // knows about the current split ratio and retains it even when resized.
 //
-class CMySplitterWnd final : public CSplitterWnd
+class CWdsSplitterWnd final : public CSplitterWndEx
 {
 public:
-    CMySplitterWnd(double * splitterPos);
+    CWdsSplitterWnd(double * splitterPos);
     void StopTracking(BOOL bAccept) override;
     void SetSplitterPos(double pos);
     void RestoreSplitterPos(double posIfVirgin);
 
 protected:
-    double m_SplitterPos{0};    // Current split ratio
-    bool m_WasTrackedByUser;    // True as soon as user has modified the splitter position
-    double * m_UserSplitterPos; // Split ratio as set by the user
+    double m_splitterPos{0};    // Current split ratio
+    bool m_wasTrackedByUser;    // True as soon as user has modified the splitter position
+    double * m_userSplitterPos; // Split ratio as set by the user
 
     DECLARE_MESSAGE_MAP()
     afx_msg void OnSize(UINT nType, int cx, int cy);
-
-public:
-    afx_msg void OnDestroy();
 };
 
 //
 // CPacmanControl. Pacman on the status bar.
 //
-class CPacmanControl final : public CStatic
+class CPacmanControl final : public CWnd
 {
 public:
-    CPacmanControl();
+    CPacmanControl() = default;
     void Drive();
     void Start();
     void Stop();
 
 protected:
-    CPacman m_Pacman;
+    CPacman m_pacman;
 
     DECLARE_MESSAGE_MAP()
     afx_msg void OnPaint();
     afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
+    afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 };
 
 //
-// CDeadFocusWnd. The focus in Windirstat can be on
+// CDeadFocusWnd. The focus in WinDirStat can be on
 // - the directory list
 // - the extension list,
-// - or none of them. In this case the focus lies on
+// - or none of them. In that case the focus resides on
 //   an invisible (zero-size) child of CMainFrame.
-// On VK_TAB CDeadFocusWnd moves the focus to the
-// directory list then.
-//
+// Pressing VK_TAB while this window has focus moves focus to the
+// directory list.
 class CDeadFocusWnd final : public CWnd
 {
 public:
@@ -138,7 +140,7 @@ protected:
 class CMainFrame final : public CFrameWndEx
 {
 protected:
-    static constexpr DWORD WM_CALLBACKUI = WM_USER + 1;
+    static constexpr DWORD WM_CALLBACKUI = WM_APP + 1;
     static UINT s_TaskBarMessage;
     static CMainFrame* s_Singleton;
 
@@ -149,34 +151,33 @@ protected:
     void InitialShowWindow();
     void InvokeInMessageThread(std::function<void()> callback) const;
 
-    void RestoreTreeMapView();
+    void RestoreTreeMapView(bool forced = false);
     void RestoreExtensionView();
     void MinimizeTreeMapView();
     void MinimizeExtensionView();
     void CopyToClipboard(const std::wstring& psz);
 
     // Used for storing and retrieving the various views
-    CFileTabbedView* m_FileTabbedView = nullptr;
-    CExtensionView* m_ExtensionView = nullptr;
-    CTreeMapView* m_TreeMapView = nullptr;
-    CFileTreeView* GetFileTreeView() const { return m_FileTabbedView->GetFileTreeView(); }
-    CFileTopView* GetFileTopView() const { return m_FileTabbedView->GetFileTopView(); }
-    CFileDupeView* GetFileDupeView() const { return m_FileTabbedView->GetFileDupeView(); }
-    CFileSearchView* GetFileSearchView() const { return m_FileTabbedView->GetFileSearchView(); }
-    CFileTabbedView* GetFileTabbedView() const { return m_FileTabbedView; }
-    CTreeMapView* GetTreeMapView() const { return m_TreeMapView; }
-    CExtensionView* GetExtensionView() const { return m_ExtensionView; }
+    CFileTabbedView* m_fileTabbedView = nullptr;
+    CExtensionView* m_extensionView = nullptr;
+    CTreeMapView* m_treeMapView = nullptr;
+    CFileTreeView* GetFileTreeView() const { return m_fileTabbedView->GetFileTreeView(); }
+    CFileTopView* GetFileTopView() const { return m_fileTabbedView->GetFileTopView(); }
+    CFileDupeView* GetFileDupeView() const { return m_fileTabbedView->GetFileDupeView(); }
+    CFileSearchView* GetFileSearchView() const { return m_fileTabbedView->GetFileSearchView(); }
+    CFileWatcherView* GetFileWatcherView() const { return m_fileTabbedView->GetFileWatcherView(); }
+    CFileTabbedView* GetFileTabbedView() const { return m_fileTabbedView; }
+    CTreeMapView* GetTreeMapView() const { return m_treeMapView; }
+    CExtensionView* GetExtensionView() const { return m_extensionView; }
 
     void CreateProgress(ULONGLONG range);
-    void SetProgressPos(ULONGLONG pos);
     void SetProgressComplete();
     void SuspendState(bool suspend);
     bool IsScanSuspended() const;
 
     void UpdateProgress();
     void UpdateDynamicMenuItems(CMenu* menu) const;
-    std::vector<CItem*> GetAllSelectedInFocus() const;
-    std::pair<CMenu*, int> LocateNamedMenu(const CMenu* menu, const std::wstring& subMenuText) const;
+    std::pair<CMenu*, int> LocateNamedMenu(const CMenu* menu, const std::wstring& subMenuText, bool removeItems = true) const;
 
     void SetLogicalFocus(LOGICAL_FOCUS lf);
     LOGICAL_FOCUS GetLogicalFocus() const;
@@ -192,30 +193,37 @@ protected:
     void CreatePacmanProgress();
     void DestroyProgress();
 
-    void SetStatusPaneText(int pos, const std::wstring& text, int minWidth = 0);
-    void UpdateCleanupMenu(CMenu* menu) const;
+    void SetStatusPaneText(const CDC& cdc, int pos, const std::wstring& text, int minWidth = 0);
+    void UpdateCleanupMenu(CMenu* menu, bool triggerAsync = true);
 
-    UINT_PTR m_Timer = 0;           // Timer for updating the display
-    bool m_ProgressVisible = false; // True while progress must be shown (either pacman or progress bar)
-    bool m_ScanSuspend = false;     // True if the scan has been suspended
-    ULONGLONG m_ProgressRange = 0;  // Progress range. A range of 0 means Pacman should be used.
-    ULONGLONG m_ProgressPos = 0;    // Progress position (<= progressRange, or an item count in case of m_ProgressRang == 0)
-    CItem* m_WorkingItem = nullptr;
+    UINT_PTR m_timer = 0;           // Timer for updating the display
+    bool m_progressVisible = false; // True while progress must be shown (either pacman or progress bar)
+    bool m_scanSuspend = false;     // True if the scan has been suspended
+    bool m_shuttingDown = false;    // Marks the process is shutting down so we can exit timers
+    ULONGLONG m_progressRange = 0;  // Progress range. A range of 0 means Pacman should be used.
+    ULONGLONG m_progressPos = 0;    // Progress position (<= progressRange, or an item count in case of m_progressRang == 0)
+    CItem* m_workingItem = nullptr;
 
-    CMySplitterWnd m_SubSplitter; // Contains the two upper views
-    CMySplitterWnd m_Splitter;    // Contains (a) m_WndSubSplitter and (b) the graph view.
+    CWdsSplitterWnd m_subSplitter; // Contains the two upper views
+    CWdsSplitterWnd m_splitter;    // Contains (a) m_wndSubSplitter and (b) the graph view.
 
-    CMFCStatusBar m_WndStatusBar; // Status bar
-    CMFCToolBar m_WndToolBar;     // Tool bar
-    CProgressCtrl m_Progress;     // Progress control. Is Create()ed and Destroy()ed again every time.
-    CPacmanControl m_Pacman;      // Static control for Pacman.
-    CMFCToolBarImages m_Images;   // Tool bar images
-    LOGICAL_FOCUS m_LogicalFocus = LF_NONE; // Which view has the logical focus
-    CDeadFocusWnd m_WndDeadFocus; // Zero-size window which holds the focus if logical focus is "NONE"
+    CMFCStatusBar m_wndStatusBar; // Status bar
+    CMFCToolBar m_wndToolBar;     // Toolbar
+    CSize m_defaultButtonSize;    // Toolbar button size at creation (pre-SetSizes, DPI-scaled)
+    CProgressCtrl m_progress;     // Progress control. Is Create()ed and Destroy()ed again every time.
+    CPacmanControl m_pacman;      // Static control for Pacman
+    LOGICAL_FOCUS m_logicalFocus = LF_NONE; // Which view has the logical focus
+    CDeadFocusWnd m_wndDeadFocus; // Zero-size window which holds the focus if logical focus is "NONE"
 
-    CComPtr<ITaskbarList3> m_TaskbarList;
-    TBPFLAG m_TaskbarButtonState = TBPF_INDETERMINATE;
-    TBPFLAG m_TaskbarButtonPreviousState = TBPF_INDETERMINATE;
+    CComPtr<ITaskbarList3> m_taskbarList;
+    TBPFLAG m_taskbarButtonState = TBPF_INDETERMINATE;
+    TBPFLAG m_taskbarButtonPreviousState = TBPF_INDETERMINATE;
+
+    // Cached values for cleanup menu queries (updated asynchronously)
+    ULONGLONG m_recycleBinItems = 0;
+    ULONGLONG m_recycleBinBytes = 0;
+    ULONGLONG m_shadowCopyCount = 0;
+    ULONGLONG m_shadowCopyBytes = 0;
 
     DECLARE_MESSAGE_MAP()
     afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
@@ -229,16 +237,34 @@ protected:
     afx_msg void OnSize(UINT nType, int cx, int cy);
     afx_msg void OnUpdateViewShowTreeMap(CCmdUI* pCmdUI);
     afx_msg void OnUpdateTreeMapUseLogical(CCmdUI* pCmdUI);
+    afx_msg void OnUpdateViewShowFileTypes(CCmdUI* pCmdUI);
+    afx_msg void OnUpdateViewShowWatcher(CCmdUI* pCmdUI);
     afx_msg void OnViewShowTreeMap();
     afx_msg void OnViewTreeMapUseLogical();
-    afx_msg void OnUpdateViewShowFileTypes(CCmdUI* pCmdUI);
     afx_msg void OnViewShowFileTypes();
+    afx_msg void OnViewShowExtensionsOnTreeMap();
+    afx_msg void OnUpdateViewShowExtensionsOnTreeMap(CCmdUI* pCmdUI);
+    afx_msg void OnViewAllFiles() { GetFileTabbedView()->SetActiveFileTreeView(); }
+    afx_msg void OnViewLargestFiles() { GetFileTabbedView()->SetActiveTopView(); }
+    afx_msg void OnViewDuplicateFiles() { GetFileTabbedView()->SetActiveDupeView(); }
+    afx_msg void OnViewSearchResults() { GetFileTabbedView()->SetActiveSearchView(); }
+    afx_msg void OnViewLargeToolBar();
+    afx_msg void OnUpdateViewLargeToolBar(CCmdUI* pCmdUI);
+    afx_msg void OnAdvancedShadowCopy(UINT nID);
+    afx_msg void OnAdvancedDefrag(UINT nID);
+    afx_msg void OnAdvancedChkdsk(UINT nID);
+    afx_msg void OnToolsWatcher();
+    void UpdateToolsMenu(CMenu* menu);
     afx_msg void OnConfigure();
     afx_msg void OnDestroy();
     afx_msg LRESULT OnTaskButtonCreated(WPARAM, LPARAM);
+    afx_msg UINT OnPowerBroadcast(UINT, LPARAM);
     afx_msg void OnSysColorChange();
-
+    afx_msg LRESULT OnUahDrawMenu(WPARAM wParam, LPARAM lParam);
+    afx_msg void OnNcPaint();
+    afx_msg BOOL OnNcActivate(BOOL bActive);
 public:
     static CMainFrame* Get() { return s_Singleton; }
+    void RebuildToolBar();
     BOOL LoadFrame(UINT nIDResource, DWORD dwDefaultStyle = WS_OVERLAPPEDWINDOW | FWS_ADDTOTITLE, CWnd* pParentWnd = NULL, CCreateContext* pContext = NULL) override;
 };

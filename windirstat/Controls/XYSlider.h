@@ -1,19 +1,18 @@
 ﻿// WinDirStat - Directory Statistics
 // Copyright © WinDirStat Team
 //
-// This program is free software; you can redistribute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
+// the Free Software Foundation, either version 2 of the License, or
+// at your option any later version.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
 #pragma once
@@ -39,7 +38,6 @@ class CXySlider final : public CStatic
 
 protected:
     void Initialize();
-    void CalcSizes();
     CRect GetGripperRect() const;
     void CheckMinMax(LONG& val, int minVal, int maxVal) const;
     void InternToExtern();
@@ -53,25 +51,24 @@ protected:
     void DoPage(const CPoint & point);
     void HighlightGripper(bool on);
 
-    bool m_Inited = false;
+    bool m_inited = false;
 
     // These are in external scale
-    CSize m_ExternalRange{ 100, 100 };
-    CPoint m_ExternalPos{ 0, 0 };
+    CSize m_externalRange{ 100, 100 };
+    CPoint m_externalPos{ 0, 0 };
 
     // These are in pixels
-    CSize m_Range;
-    CPoint m_Pos{ 0, 0 }; // relative to m_Zero
+    CSize m_range;
+    CPoint m_pos{ 0, 0 }; // relative to m_zero
 
     // Constants (in pixels)
-    CRect m_RcAll;
-    CRect m_RcInner;
-    CPoint m_Zero{ 0, 0 };
-    CSize m_Radius;
-    CSize m_GripperRadius;
+    CRect m_rcAll;
+    CRect m_rcInner;
+    CPoint m_zero{ 0, 0 };
+    CSize m_radius;
+    CSize m_gripperRadius;
 
-    UINT_PTR m_Timer = 0;
-    bool m_GripperHighlight = false;
+    bool m_gripperHighlight = false;
 
     DECLARE_MESSAGE_MAP()
     afx_msg UINT OnGetDlgCode();

@@ -1,28 +1,22 @@
 ﻿// WinDirStat - Directory Statistics
 // Copyright © WinDirStat Team
 //
-// This program is free software; you can redistribute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
+// the Free Software Foundation, either version 2 of the License, or
+// at your option any later version.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-#include "stdafx.h"
-#include "WinDirStat.h"
-#include "Item.h"
-#include "MainFrame.h"
-#include "DirStatDoc.h"
+#include "pch.h"
 #include "ExtensionView.h"
-#include "Localization.h"
 #include "ExtensionListControl.h"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -37,30 +31,30 @@ BEGIN_MESSAGE_MAP(CExtensionView, CView)
 END_MESSAGE_MAP()
 
 CExtensionView::CExtensionView()
-    : m_ExtensionListControl(this) {};
+    : m_extensionListControl(this) {};
 
 void CExtensionView::SysColorChanged()
 {
-    m_ExtensionListControl.SysColorChanged();
+    m_extensionListControl.SysColorChanged();
 }
 
 bool CExtensionView::IsShowTypes() const
 {
-    return m_ShowTypes;
+    return m_showTypes;
 }
 
 void CExtensionView::ShowTypes(const bool show)
 {
-    m_ShowTypes = show;
+    m_showTypes = show;
     OnUpdate(nullptr, 0, nullptr);
 }
 
 void CExtensionView::SetHighlightExtension(const std::wstring & ext)
 {
-    GetDocument()->SetHighlightExtension(ext);
-    if (GetFocus() == &m_ExtensionListControl)
+    CDirStatDoc::Get()->SetHighlightExtension(ext);
+    if (GetFocus() == &m_extensionListControl)
     {
-        GetDocument()->UpdateAllViews(this, HINT_EXTENSIONSELECTIONCHANGED);
+        CDirStatDoc::Get()->UpdateAllViews(this, HINT_EXTENSIONSELECTIONCHANGED);
     }
 }
 
@@ -72,14 +66,13 @@ int CExtensionView::OnCreate(const LPCREATESTRUCT lpCreateStruct)
     }
 
     constexpr RECT rect = {0, 0, 0, 0};
-    VERIFY(m_ExtensionListControl.Create(LVS_SINGLESEL | LVS_OWNERDRAWFIXED | LVS_SHOWSELALWAYS | WS_CHILD | WS_VISIBLE | LVS_REPORT, rect, this, ID_WDS_CONTROL));
-    m_ExtensionListControl.SetExtendedStyle(m_ExtensionListControl.GetExtendedStyle() | LVS_EX_HEADERDRAGDROP);
+    m_extensionListControl.Create(LVS_OWNERDATA | LVS_SINGLESEL | LVS_OWNERDRAWFIXED | LVS_SHOWSELALWAYS | WS_CHILD | WS_VISIBLE | LVS_REPORT, rect, this, ID_WDS_CONTROL);
+    m_extensionListControl.SetExtendedStyle(m_extensionListControl.GetExtendedStyle() | LVS_EX_HEADERDRAGDROP);
+    m_extensionListControl.ShowGrid(COptions::ListGrid);
+    m_extensionListControl.ShowStripes(COptions::ListStripes);
+    m_extensionListControl.ShowFullRowSelection(COptions::ListFullRowSelection);
 
-    m_ExtensionListControl.ShowGrid(COptions::ListGrid);
-    m_ExtensionListControl.ShowStripes(COptions::ListStripes);
-    m_ExtensionListControl.ShowFullRowSelection(COptions::ListFullRowSelection);
-
-    m_ExtensionListControl.Initialize();
+    m_extensionListControl.Initialize();
     return 0;
 }
 
@@ -89,18 +82,18 @@ void CExtensionView::OnUpdate(CView* /*pSender*/, const LPARAM lHint, CObject*)
     {
     case HINT_NEWROOT:
     case HINT_NULL:
-        if (IsShowTypes() && GetDocument()->IsRootDone())
+        if (IsShowTypes() && CDirStatDoc::Get()->IsRootDone())
         {
-            m_ExtensionListControl.SetRootSize(GetDocument()->GetRootSize());
-            m_ExtensionListControl.SetExtensionData(GetDocument()->GetExtensionData());
+            m_extensionListControl.SetRootSize(CDirStatDoc::Get()->GetRootSize());
+            m_extensionListControl.SetExtensionData(CDirStatDoc::Get()->GetExtensionData());
 
             // If there is no vertical scroll bar, the header control doesn't repaint
             // correctly. Don't know why. But this helps:
-            m_ExtensionListControl.GetHeaderCtrl()->InvalidateRect(nullptr);
+            m_extensionListControl.GetHeaderCtrl()->InvalidateRect(nullptr);
         }
         else
         {
-            m_ExtensionListControl.SetExtensionData(nullptr);
+            m_extensionListControl.SetExtensionData(nullptr);
         }
 
         [[fallthrough]];
@@ -117,16 +110,16 @@ void CExtensionView::OnUpdate(CView* /*pSender*/, const LPARAM lHint, CObject*)
     case HINT_TREEMAPSTYLECHANGED:
         {
             InvalidateRect(nullptr);
-            m_ExtensionListControl.InvalidateRect(nullptr);
-            m_ExtensionListControl.GetHeaderCtrl()->InvalidateRect(nullptr);
+            m_extensionListControl.InvalidateRect(nullptr);
+            m_extensionListControl.GetHeaderCtrl()->InvalidateRect(nullptr);
         }
         break;
 
     case HINT_LISTSTYLECHANGED:
         {
-            m_ExtensionListControl.ShowGrid(COptions::ListGrid);
-            m_ExtensionListControl.ShowStripes(COptions::ListStripes);
-            m_ExtensionListControl.ShowFullRowSelection(COptions::ListFullRowSelection);
+            m_extensionListControl.ShowGrid(COptions::ListGrid);
+            m_extensionListControl.ShowStripes(COptions::ListStripes);
+            m_extensionListControl.ShowFullRowSelection(COptions::ListFullRowSelection);
         }
         break;
     default:
@@ -138,10 +131,10 @@ void CExtensionView::SetSelection()
 {
     // Get first extension from selected items
     const auto & items = CFileTreeControl::Get()->GetAllSelected<CItem>();
-    CItem* validItem = nullptr;
+    const CItem* validItem = nullptr;
     for (const auto& item : items)
     {
-        if (item->IsType(IT_FILE))
+        if (item->IsTypeOrFlag(IT_FILE))
         {
             validItem = item;
             break;
@@ -151,9 +144,9 @@ void CExtensionView::SetSelection()
     // Set selection if not already selected
     if (validItem == nullptr) return;
     if (const std::wstring& ext = validItem->GetExtension();
-        m_ExtensionListControl.GetSelectedExtension() != ext)
+        m_extensionListControl.GetSelectedExtension() != ext)
     {
-        m_ExtensionListControl.SelectExtension(ext);
+        m_extensionListControl.SelectExtension(ext);
     }
 }
 
@@ -165,14 +158,19 @@ void CExtensionView::OnDraw(CDC* pDC)
 void CExtensionView::OnSize(const UINT nType, const int cx, const int cy)
 {
     CView::OnSize(nType, cx, cy);
-    if (IsWindow(m_ExtensionListControl.m_hWnd))
+    if (IsWindow(m_extensionListControl.m_hWnd))
     {
         CRect rc(0, 0, cx, cy);
-        m_ExtensionListControl.MoveWindow(rc);
+        m_extensionListControl.MoveWindow(rc);
     }
 }
 
 void CExtensionView::OnSetFocus(CWnd* /*pOldWnd*/)
 {
-    m_ExtensionListControl.SetFocus();
+    m_extensionListControl.SetFocus();
+}
+
+BOOL CExtensionView::OnEraseBkgnd(CDC* /*pDC*/)
+{
+    return TRUE;
 }

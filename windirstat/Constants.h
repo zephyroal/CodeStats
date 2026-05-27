@@ -1,30 +1,25 @@
 ﻿// WinDirStat - Directory Statistics
 // Copyright © WinDirStat Team
 //
-// This program is free software; you can redistribute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
+// the Free Software Foundation, either version 2 of the License, or
+// at your option any later version.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
 #pragma once
 
-#include <string>
-
 namespace wds
 {
     // String and character constants
-    inline constexpr auto chrBracketOpen  = L'(';
-    inline constexpr auto chrBracketClose = L')';
     inline constexpr auto chrDot          = L'.';
     inline constexpr auto chrDoubleQuote  = L'"';
     inline constexpr auto chrColon        = L':';
@@ -34,20 +29,36 @@ namespace wds
     inline constexpr auto strEmpty        = L"";
     inline constexpr auto chrBlankSpace   = L' ';
     inline constexpr auto chrStar         = L'*';
-    inline constexpr auto chrPercent      = L'%';
+    inline constexpr auto chrEqual        = L'=';
+    inline constexpr auto szNpos          = std::wstring::npos;
+
+    // Binary size constants
+    inline constexpr auto Ki = 1024ull;
+    inline constexpr auto Mi = Ki * Ki;
+    inline constexpr auto Gi = Mi * Ki;
+    inline constexpr auto Ti = Gi * Ki;
 
     inline constexpr auto strExplorerKey = L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer";
+    inline constexpr auto strThemesKey   = L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
+    inline constexpr auto strUninstall   = L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\WinDirStat";
 
     inline constexpr auto strInvalidAttributes     = L"??????";
-    inline constexpr auto strAttributeReadonly     = L"R"; /*FILE_ATTRIBUTE_READONLY*/
-    inline constexpr auto strAttributeHidden       = L"H"; /*FILE_ATTRIBUTE_HIDDEN*/
-    inline constexpr auto strAttributeSystem       = L"S"; /*FILE_ATTRIBUTE_SYSTEM*/
-    inline constexpr auto strAttributeArchive      = L"A"; /*FILE_ATTRIBUTE_ARCHIVE*/
-    inline constexpr auto strAttributeReparsePoint = L"@"; /*FILE_ATTRIBUTE_REPARSE_POINT*/
-    inline constexpr auto strAttributeCompressed   = L"C"; /*FILE_ATTRIBUTE_COMPRESSED*/
-    inline constexpr auto strAttributeOffline      = L"O"; /*FILE_ATTRIBUTE_OFFLINE*/
-    inline constexpr auto strAttributeEncrypted    = L"E"; /*FILE_ATTRIBUTE_ENCRYPTED*/
-    inline constexpr auto strAttributeSparse       = L"Z"; /*FILE_ATTRIBUTE_SPARSE*/
+    inline constexpr auto chrAttributeReadonly     = L'R'; /*FILE_ATTRIBUTE_READONLY*/
+    inline constexpr auto chrAttributeHidden       = L'H'; /*FILE_ATTRIBUTE_HIDDEN*/
+    inline constexpr auto chrAttributeSystem       = L'S'; /*FILE_ATTRIBUTE_SYSTEM*/
+    inline constexpr auto chrAttributeArchive      = L'A'; /*FILE_ATTRIBUTE_ARCHIVE*/
+    inline constexpr auto chrAttributeReparsePoint = L'@'; /*FILE_ATTRIBUTE_REPARSE_POINT*/
+    inline constexpr auto chrAttributeCompressed   = L'C'; /*FILE_ATTRIBUTE_COMPRESSED*/
+    inline constexpr auto chrAttributeOffline      = L'O'; /*FILE_ATTRIBUTE_OFFLINE*/
+    inline constexpr auto chrAttributeEncrypted    = L'E'; /*FILE_ATTRIBUTE_ENCRYPTED*/
+    inline constexpr auto chrAttributeSparse       = L'Z'; /*FILE_ATTRIBUTE_SPARSE*/
 
+    inline constexpr auto strWinDirStat = L"WinDirStat";
     inline constexpr std::wstring_view strAlpha{ L"ABCDEFGHIJKLMNOPQRSTUVWXYZ" };
+    inline constexpr int alphaSize = std::ssize(strAlpha);
+
+    // Font name constants
+    inline constexpr auto strFontArial = L"Arial";
+    inline constexpr auto strFontLucidaConsole = L"Lucida Console";
+    inline constexpr auto strFontSegoeUISymbol = L"Segoe UI Symbol";
 }

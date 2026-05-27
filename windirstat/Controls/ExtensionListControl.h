@@ -1,31 +1,28 @@
 ﻿// WinDirStat - Directory Statistics
 // Copyright © WinDirStat Team
 //
-// This program is free software; you can redistribute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
+// the Free Software Foundation, either version 2 of the License, or
+// at your option any later version.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
 #pragma once
-
-#include "DirStatDoc.h"
 
 class CExtensionView;
 
 //
 // CExtensionListControl.
 //
-class CExtensionListControl final : public COwnerDrawnListControl
+class CExtensionListControl final : public CWdsListControl
 {
 protected:
     // Columns
@@ -40,18 +37,18 @@ protected:
     };
 
     // CListItem. The items of the CExtensionListControl.
-    class CListItem final : public COwnerDrawnListItem
+    class CListItem final : public CWdsListItem
     {
     public:
         CListItem(CExtensionListControl* list, const std::wstring & extension, const SExtensionRecord& r);
-        ~CListItem() = default;
+        ~CListItem() override = default;
 
         bool DrawSubItem(int subitem, CDC* pdc, CRect rc, UINT state, int* width, int* focusLeft) override;
         std::wstring GetText(int subitem) const override;
 
         std::wstring GetExtension() const;
         HICON GetIcon() override;
-        int Compare(const CSortingListItem* baseOther, int subitem) const override;
+        int Compare(const CWdsListItem* baseOther, int subitem) const override;
 
     private:
         void DrawColor(CDC* pdc, CRect rc, UINT state, int* width) const;
@@ -61,13 +58,13 @@ protected:
 
         double GetBytesFraction() const;
 
-        std::wstring m_Extension;
-        std::wstring m_Description;
-        CExtensionListControl* m_List;
-        HICON m_Icon = nullptr;
-        ULONGLONG m_Bytes = 0;
-        ULONGLONG m_Files = 0;
-        COLORREF m_Color = 0;
+        std::wstring m_extension;
+        std::wstring m_description;
+        CExtensionListControl* m_driveList;
+        HICON m_icon = nullptr;
+        ULONGLONG m_bytes = 0;
+        ULONGLONG m_files = 0;
+        COLORREF m_color = 0;
     };
 
 public:
@@ -83,13 +80,16 @@ public:
 protected:
     CListItem* GetListItem(int i) const;
 
-    CExtensionView* m_ExtensionView;
-    ULONGLONG m_RootSize = 0;
+    CBitmap m_searchBitmap;
+    CExtensionView* m_extensionView;
+    ULONGLONG m_rootSize = 0;
 
     DECLARE_MESSAGE_MAP()
     afx_msg void OnLvnDeleteItem(NMHDR* pNMHDR, LRESULT* pResult);
-    afx_msg void MeasureItem(LPMEASUREITEMSTRUCT mis);
     afx_msg void OnSetFocus(CWnd* pOldWnd);
     afx_msg void OnLvnItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
     afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
+    afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
+    afx_msg void OnSearchExtension();
+    afx_msg void OnExcludeExtension();
 };

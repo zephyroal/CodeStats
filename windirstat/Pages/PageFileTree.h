@@ -1,30 +1,29 @@
 ﻿// WinDirStat - Directory Statistics
 // Copyright © WinDirStat Team
 //
-// This program is free software; you can redistribute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
+// the Free Software Foundation, either version 2 of the License, or
+// at your option any later version.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
 #pragma once
 
-#include "WinDirStat.h"
+#include "pch.h"
 #include "ColorButton.h"
 
 //
 // CPageFileTree. "Settings" property page "Folder List".
 //
-class CPageFileTree final : public CPropertyPageEx
+class CPageFileTree final : public CMFCPropertyPage
 {
     DECLARE_DYNAMIC(CPageFileTree)
 
@@ -39,26 +38,27 @@ protected:
     void OnOK() override;
     void EnableButtons();
 
-    BOOL m_PacmanAnimation = FALSE;
-    BOOL m_ShowTimeSpent = FALSE;
-    BOOL m_ShowColumnFolders = FALSE;
-    BOOL m_ShowColumnItems = FALSE;
-    BOOL m_ShowColumnFiles = FALSE;
-    BOOL m_ShowColumnAttributes = FALSE;
-    BOOL m_ShowColumnLastChange = FALSE;
-    BOOL m_ShowColumnLineCount = FALSE;
-    BOOL m_ShowColumnOwner = FALSE;
-    BOOL m_ShowColumnSizePhysical = FALSE;
-    BOOL m_ShowColumnSizeLogical = FALSE;
+    BOOL m_pacmanAnimation = FALSE;
+    BOOL m_showTimeSpent = FALSE;
+    BOOL m_showColumnFolders = FALSE;
+    BOOL m_showColumnItems = FALSE;
+    BOOL m_showColumnFiles = FALSE;
+    BOOL m_showColumnAttributes = FALSE;
+    BOOL m_showColumnLastChange = FALSE;
+    BOOL m_showColumnLineCount = FALSE;
+    BOOL m_showColumnOwner = FALSE;
+    BOOL m_showColumnSizePhysical = FALSE;
+    BOOL m_showColumnSizeLogical = FALSE;
 
-    int m_FileTreeColorCount = TREELISTCOLORCOUNT;
-    COLORREF m_FileTreeColor[TREELISTCOLORCOUNT] = {};
+    int m_fileTreeColorCount = TREELISTCOLORCOUNT;
+    COLORREF m_fileTreeColor[TREELISTCOLORCOUNT] = {};
 
-    CColorButton m_ColorButton[TREELISTCOLORCOUNT];
-    CSliderCtrl m_Slider;
+    CColorButton m_colorButton[TREELISTCOLORCOUNT];
+    CSliderCtrl m_slider;
 
     DECLARE_MESSAGE_MAP()
     afx_msg void OnColorChanged(UINT id, NMHDR*, LRESULT*);
     afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
     afx_msg void OnBnClickedSetModified();
+    afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 };

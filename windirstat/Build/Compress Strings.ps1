@@ -1,75 +1,46 @@
-﻿param($Path)
+param($Path)
 
-$env:LIB = ''
-$CompressLibrary = Add-Type -TypeDefinition @"
-    using System;
-    using System.Runtime.InteropServices;
+# Normalize module path issues
+$env:PSModulePath = Join-Path ([System.Environment]::SystemDirectory) '\WindowsPowerShell\v1.0\Modules'
 
-    public class RtlCompression
-    {
-        [DllImport("ntdll.dll", SetLastError=true)]
-        public static extern uint RtlCompressBuffer(
-            ushort CompressionFormat,
-            byte[] UncompressedBuffer,
-            uint UncompressedBufferSize,
-            byte[] CompressedBuffer,
-            uint CompressedBufferSize,
-            uint chunkSize,
-            out uint FinalCompressedSize,
-            IntPtr WorkSpace
-        );
-
-        [DllImport("ntdll.dll", SetLastError=true)]
-        public static extern uint RtlGetCompressionWorkSpaceSize(
-            ushort CompressionFormat,
-            out uint CompressBufferWorkSpaceSize,
-            out uint CompressFragmentWorkSpaceSize
-        );
-    }
-"@ -PassThru
-
-$COMPRESSION_FORMAT_LZNT1 = 0x2
-$COMPRESSION_ENGINE_MAXIMUM = 0x0100
-$Alg = $COMPRESSION_FORMAT_LZNT1 -bor $COMPRESSION_ENGINE_MAXIMUM
-
-[uint32]$workSpaceSize = 0
-[uint32]$fragmentWorkSpaceSize = 0
-if ($CompressLibrary::RtlGetCompressionWorkSpaceSize($Alg, [ref]$workSpaceSize, [ref]$fragmentWorkSpaceSize) -ne 0) { Exit 1 }
-$workSpaceBuffer = [System.Runtime.InteropServices.Marshal]::AllocHGlobal([int]$workSpaceSize)
-
+# Combine all language files into lang_combined.txt
+$Encoding = [System.Text.UTF8Encoding]::new($false)
 $Files = Get-ChildItem -Path "$Path\*.txt" -Recurse
-ForEach ($File in $Files)
+$CombinedLines = Get-ChildItem -Path "${Path}\lang_*.txt" -Recurse |
+    Where-Object Name -match '^lang_([a-z]{2}(?:-[A-Z]{2})?)\.txt$' | ForEach-Object `
 {
-    If ($File.Name -like 'lang_*.txt')
-    {
-        $Content = $File | Get-Content -Encoding UTF8 | Sort-Object -Unique | Where-Object { -not [string]::IsNullOrEmpty($_) }
-        $Encoding = New-Object System.Text.UTF8Encoding $False
-        [System.IO.File]::WriteAllLines($File.FullName, $Content, $Encoding)
-    }
+    $Content = $_ | Get-Content -Encoding UTF8 | Sort-Object -Unique | Where-Object { $_ }
+    [System.IO.File]::WriteAllLines($_.FullName, $Content, $Encoding)
 
-    $bytesToCompress = [System.IO.File]::ReadAllBytes($File.FullName)
-    $compressedData = New-Object byte[] ($bytesToCompress.Length)
-
-    [uint32]$compressedSize = 0
-    if ($CompressLibrary::RtlCompressBuffer($Alg, $bytesToCompress, $bytesToCompress.Length,
-        $compressedData, $compressedData.Length, 4096, [ref]$compressedSize, $workSpaceBuffer) -eq 0)
-    {
-        [Array]::Resize([ref] $compressedData, $compressedSize)
-        $NewFile = $File.FullName -replace '.txt$','.bin'
-        [System.IO.File]::WriteAllBytes($NewFile, $compressedData)
-    }
+    $LangCode = $Matches[1]
+    $Content | ForEach-Object { "${LangCode}:$_" }
+    $Files = @($Files | Where-Object FullName -ne $_.FullName)
+}
+if ($CombinedLines) {
+    $OutFile = Join-Path $Path 'lang_combined.txt'
+    [System.IO.File]::WriteAllLines($OutFile, $CombinedLines, $Encoding)
+    $Files += @(Get-Item $OutFile)
 }
 
+# Sort lines for normalization / comparison
+Get-ChildItem -Path "${Path}\lang_*.txt" -Recurse | ForEach-Object {
+    [System.IO.File]::WriteAllLines($_.FullName, ($_ | Get-Content -Encoding UTF8 | Sort-Object -Unique), $Encoding)
+}
+
+# Write out languages header file
 $TempHeader = (New-TemporaryFile).FullName
-'#pragma once' | Out-File $TempHeader -Force -Encoding utf8
-'#include <string_view>' | Out-File $TempHeader -Encoding utf8 -Append
-$Files | Where-Object Name -like 'lang_*.txt' | Get-Content | 
-    ForEach-Object { $_ -replace '=.*','' } |
-    Sort-Object -Unique | 
-    ForEach { "constexpr std::wstring_view $_ = L""$_"";" } |
-    Out-File $TempHeader -Encoding utf8 -Append
-If ((Get-FileHash "$Path\LangStrings.h").Hash -ne (Get-FileHash $TempHeader).Hash)
-{
+@(
+    '#pragma once'
+    '#include <string_view>'
+    ($CombinedLines | ForEach-Object { $_ -replace '=.*','' -replace '^.*?:','' } | Sort-Object -Unique | ForEach-Object { "constexpr std::wstring_view $_ = L""$_"";" })
+) | Out-File $TempHeader -Encoding utf8 -Force
+if ((Get-FileHash "$Path\LangStrings.h").Hash -ne (Get-FileHash $TempHeader).Hash) {
     Copy-Item -LiteralPath $TempHeader "$Path\LangStrings.h" -Force
 }
 Remove-Item -LiteralPath $TempHeader -Force
+
+# Compress file data
+foreach ($File in $Files) {
+    makecab /D CompressionType=LZX /D CompressionMemory=21 $File.FullName ($File.FullName -replace '\.txt$', '.bin') | Out-Null
+    if ($File.Name -eq 'lang_combined.txt') { Remove-Item $File.FullName -Force }
+}

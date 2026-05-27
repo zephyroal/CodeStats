@@ -1,10 +1,11 @@
+/.git/
+/.claude/
+/.vs/
+/publish/
+build/
+intermediate/
 *.aps
 *.bin
 *.vcxproj.user
 *.lastcodeanalysissucceeded
-/intermediate/
-/build/
-/publish/
-/enc_temp_folder/
-/.git/
-.vs/
+*_combined.txt

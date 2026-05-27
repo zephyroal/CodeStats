@@ -1,32 +1,25 @@
 ﻿// WinDirStat - Directory Statistics
 // Copyright © WinDirStat Team
 //
-// This program is free software; you can redistribute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
+// the Free Software Foundation, either version 2 of the License, or
+// at your option any later version.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-#include "stdafx.h"
-#include "WinDirStat.h"
-#include "MainFrame.h"
+#include "pch.h"
 #include "SelectDrivesDlg.h"
 #include "AboutDlg.h"
-#include "DirStatDoc.h"
 #include "TreeMapView.h"
-#include "GlobalHelpers.h"
-#include "Localization.h"
-#include "PageFiltering.h"
-#include "SmartPointer.h"
+#include "CsvLoader.h"
 
 CIconHandler* GetIconHandler()
 {
@@ -45,22 +38,18 @@ BEGIN_MESSAGE_MAP(CDirStatApp, CWinAppEx)
     ON_COMMAND(ID_HELP_REPORTBUG, OnReportBug)
 END_MESSAGE_MAP()
 
-CDirStatApp CDirStatApp::_singleton;
+CDirStatApp CDirStatApp::s_singleton;
 
 CDirStatApp::CDirStatApp()
 {
-#ifdef VTRACE_TO_CONSOLE
-    m_VtraceConsole.Attach(new CWDSTracerConsole);
-#endif
-
-    m_AltColor = GetAlternativeColor(RGB(0x00, 0x00, 0xFF), L"AltColor");
-    m_AltEncryptionColor = GetAlternativeColor(RGB(0x00, 0x80, 0x00), L"AltEncryptionColor");
+    m_altColor = GetAlternativeColor(RGB(0x3A, 0x99, 0xE8), L"AltColor");
+    m_altEncryptionColor = GetAlternativeColor(RGB(0x00, 0x80, 0x00), L"AltEncryptionColor");
 }
 
 CIconHandler* CDirStatApp::GetIconHandler()
 {
-    m_IconList.Initialize();
-    return &m_IconList;
+    m_iconList.Initialize();
+    return &m_iconList;
 }
 
 void CDirStatApp::RestartApplication(bool resetPreferences)
@@ -86,7 +75,7 @@ void CDirStatApp::RestartApplication(bool resetPreferences)
     if (const BOOL success = CreateProcess(GetAppFileName().c_str(), nullptr, nullptr, nullptr, false,
         resetPreferences ? 0 : CREATE_SUSPENDED, nullptr, nullptr, &si, &pi); !success)
     {
-        DisplayError(Localization::Format(IDS_CREATEPROCESSsFAILEDs, GetAppFileName(), TranslateError()));
+        DisplayError(Localization::Format(IDS_PROCESS_FAILEDss, GetAppFileName(), TranslateError()));
         return;
     }
 
@@ -96,8 +85,8 @@ void CDirStatApp::RestartApplication(bool resetPreferences)
         ExitProcess(0);
     }
 
-    // We _send_ the WM_CLOSE here to ensure that all COptions-Settings
-    // like column widths an so on are saved before the new instance is resumed.
+    // We _send_ the WM_CLOSE here to ensure that all COptions settings
+    // like column widths and so on are saved before the new instance is resumed.
     // This will post a WM_QUIT message.
     (void)CMainFrame::Get()->SendMessage(WM_CLOSE);
 
@@ -112,8 +101,8 @@ void CDirStatApp::RestartApplication(bool resetPreferences)
 
 std::tuple<ULONGLONG, ULONGLONG> CDirStatApp::GetFreeDiskSpace(const std::wstring & pszRootPath)
 {
-    ULARGE_INTEGER u64total = {{0, 0}};
-    ULARGE_INTEGER u64free = {{0, 0}};
+    ULARGE_INTEGER u64total = {.QuadPart = 0};
+    ULARGE_INTEGER u64free = {.QuadPart = 0};
 
     if (GetDiskFreeSpaceEx(pszRootPath.c_str(), nullptr, &u64total, &u64free) == 0)
     {
@@ -158,13 +147,13 @@ COLORREF CDirStatApp::GetAlternativeColor(const COLORREF clrDefault, const std::
 COLORREF CDirStatApp::AltColor() const
 {
     // Return property value
-    return m_AltColor;
+    return m_altColor;
 }
 
 COLORREF CDirStatApp::AltEncryptionColor() const
 {
     // Return property value
-    return m_AltEncryptionColor;
+    return m_altEncryptionColor;
 }
 
 std::wstring CDirStatApp::GetCurrentProcessMemoryInfo()
@@ -176,7 +165,7 @@ std::wstring CDirStatApp::GetCurrentProcessMemoryInfo()
         return wds::strEmpty;
     }
 
-    return L"     " + Localization::Format(IDS_RAMUSAGEs, FormatBytes(pmc.WorkingSetSize));
+    return Localization::Format(IDS_RAMUSAGEs, FormatBytes(pmc.WorkingSetSize));
 }
 
 bool CDirStatApp::InPortableMode()
@@ -203,7 +192,8 @@ bool CDirStatApp::SetPortableMode(const bool enable, const bool onlyOpen)
     if (enable)
     {
         // Enable portable mode by creating the file
-        SmartPointer<HANDLE> iniHandle(CloseHandle, CreateFile(ini.c_str(), GENERIC_WRITE | GENERIC_READ, FILE_SHARE_READ,
+        const SmartPointer iniHandle(CloseHandle, CreateFile(ini.c_str(), GENERIC_WRITE | GENERIC_READ,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
             nullptr, onlyOpen ? OPEN_EXISTING : OPEN_ALWAYS , 0, nullptr));
         if (iniHandle != INVALID_HANDLE_VALUE)
         {
@@ -213,14 +203,14 @@ bool CDirStatApp::SetPortableMode(const bool enable, const bool onlyOpen)
         }
 
         // Fallback to registry mode for any failures
-        SetRegistryKey(Localization::Lookup(IDS_APP_TITLE).c_str());
+        SetRegistryKey(wds::strWinDirStat);
         return false;
     }
 
     // Attempt to remove file succeeded
     if (DeleteFile(ini.c_str()) != 0 || GetLastError() == ERROR_FILE_NOT_FOUND)
     {
-        SetRegistryKey(Localization::Lookup(IDS_APP_TITLE).c_str());
+        SetRegistryKey(wds::strWinDirStat);
         return true;
     }
 
@@ -236,12 +226,15 @@ CString AFXGetRegPath(LPCTSTR lpszPostFix, LPCTSTR)
     return CString(L"Software\\WinDirStat\\WinDirStat\\") + lpszPostFix + L"\\";
 }
 
- class CWinDirStatCommandLineInfo final : public CCommandLineInfo
+class CWinDirStatCommandLineInfo final : public CCommandLineInfo
 {
-public:
+    std::wstring m_pendingFlag;
+    const std::wstring saveToFlag = L"saveto";
+    const std::wstring saveDupesToFlag = L"savedupesto";
+    const std::wstring loadFromFlag = L"loadfrom";
+    const std::wstring legacyUninstallFlag = L"legacyuninstall";
 
-    DWORD m_ParentPid = 0;
-    std::vector<std::wstring> m_PathsToOpen;
+public:
 
     void ParseParam(const WCHAR* pszParam, BOOL bFlag, BOOL bLast) override
     {
@@ -250,22 +243,52 @@ public:
         // Normalize string for parsing
         std::wstring param{ pszParam };
         TrimString(param, wds::chrDoubleQuote);
-        TrimString(param, wds::chrBackslash);
+        TrimString(param, wds::chrBackslash, true);
+
+        // If we have a pending flag, this non-flag param is its value
+        if (!m_pendingFlag.empty() && !bFlag)
+        {
+            if (m_pendingFlag == saveToFlag)
+            {
+                CDirStatApp::Get()->m_saveToPath = param;
+                COptions::ScanForDuplicates = false;
+            }
+            else if (m_pendingFlag == saveDupesToFlag)
+            {
+                CDirStatApp::Get()->m_saveDupesToPath = param;
+                COptions::ScanForDuplicates = true;
+            }
+            else if (m_pendingFlag == loadFromFlag)
+            {
+                CDirStatApp::Get()->m_loadFromPath = param;
+            }
+            
+            m_pendingFlag.clear();
+            return;
+        }
 
         // Handle any non-flags as paths
         if (!bFlag)
         {
-            if (!m_strFileName.IsEmpty()) m_strFileName += wds::chrPipe;
-            m_strFileName += param.c_str();
+            for (const auto& paramSpilt : SplitString(param))
+            {
+                if (!m_strFileName.IsEmpty()) m_strFileName += wds::chrPipe;
+                std::error_code ec;
+                const std::wstring fullPath = std::filesystem::absolute(paramSpilt + L"\\", ec).wstring();
+                if (FolderExists(fullPath)) m_strFileName += fullPath.c_str();
+            }
             return;
         }
 
-        // Handle special parameter of parent process to close
-        MakeLower(param);
-        const std::wstring ParentPidFlag = L"parentpid:";
-        if (param.starts_with(ParentPidFlag))
+        // Handle flags
+        param = MakeLower(param);
+        if (param == saveToFlag || param == saveDupesToFlag || param == loadFromFlag)
         {
-            m_ParentPid = std::stoul(param.substr(ParentPidFlag.size()));
+            m_pendingFlag = param;
+        }
+        else if (param == legacyUninstallFlag)
+        {
+            CDirStatApp::LegacyUninstall();
         }
     }
 };
@@ -275,24 +298,11 @@ BOOL CDirStatApp::InitInstance()
     // Prevent state saving
     m_bSaveState = FALSE;
 
-    CWinAppEx::InitInstance();
-    InitShellManager();
+    // Set process I/O priority to high for better disk scanning performance
+    SetProcessIoPriorityHigh();
 
     // Load default language just to get bootstrapped
     Localization::LoadResource(MAKELANGID(LANG_ENGLISH, SUBLANG_NEUTRAL));
-
-    // Initialize visual controls
-    constexpr INITCOMMONCONTROLSEX ctrls = { sizeof(INITCOMMONCONTROLSEX) , ICC_STANDARD_CLASSES };
-    (void)InitCommonControlsEx(&ctrls);
-    (void)OleInitialize(nullptr);
-    (void)AfxOleInit();
-    AfxEnableControlContainer();
-    (void)AfxInitRichEdit2();
-
-    // Initialize GPI Plus
-    Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-    ULONG_PTR gdiplusToken;
-    Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
 
     // If a local config file is available, use that for settings
     SetPortableMode(true, true);
@@ -300,19 +310,46 @@ BOOL CDirStatApp::InitInstance()
     COptions::LoadAppSettings();
     LoadStdProfileSettings(0);
 
-    m_PDocTemplate = new CSingleDocTemplate(
+    // Silently restart elevated conditionally before any expensive initialization
+    if (IsElevationAvailable() && COptions::AutoElevate && !COptions::ShowElevationPrompt) // only if user doesn't want to be prompted
+    {
+        RunElevated(m_lpCmdLine);
+    }
+
+    // Set app to prefer dark mode
+    DarkMode::SetAppDarkMode();
+    CWinAppEx::InitInstance();
+
+    // Initialize visual controls
+    constexpr INITCOMMONCONTROLSEX ctrls = { sizeof(INITCOMMONCONTROLSEX) , ICC_STANDARD_CLASSES };
+    (void)CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+    (void)InitCommonControlsEx(&ctrls);
+    (void)AfxInitRichEdit2();
+
+    // Initialize GDI Plus
+    const Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+    ULONG_PTR gdiplusToken;
+    Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
+
+    m_pDocTemplate = new CSingleDocTemplate(
         IDR_MAINFRAME,
         RUNTIME_CLASS(CDirStatDoc),
         RUNTIME_CLASS(CMainFrame),
         RUNTIME_CLASS(CTreeMapView));
-    AddDocTemplate(m_PDocTemplate);
+    AddDocTemplate(m_pDocTemplate);
 
     // Parse command line arguments
     CWinDirStatCommandLineInfo cmdInfo;
     ParseCommandLine(cmdInfo);
     ProcessShellCommand(cmdInfo);
 
+    // Check if we should hide the app window
+    const bool hideApp = !m_saveToPath.empty() || !m_saveDupesToPath.empty();
+    if (hideApp) m_nCmdShow = SW_HIDE;
+
     CMainFrame::Get()->InitialShowWindow();
+    CMainFrame::Get()->RebuildToolBar();
+    m_pMainWnd->Invalidate();
     m_pMainWnd->UpdateWindow();
 
     // When called by setup.exe, WinDirStat remained in the
@@ -327,64 +364,68 @@ BOOL CDirStatApp::InitInstance()
     }
 
     // Enable reading of reparse data for cloud links
-    SmartPointer<HMODULE> hmod(FreeLibrary, LoadLibrary(L"ntdll.dll"));
     CHAR(WINAPI * RtlSetProcessPlaceholderCompatibilityMode) (CHAR Mode) =
         reinterpret_cast<decltype(RtlSetProcessPlaceholderCompatibilityMode)>(
-            static_cast<LPVOID>(GetProcAddress(hmod, "RtlSetProcessPlaceholderCompatibilityMode")));
+            static_cast<LPVOID>(GetProcAddress(GetModuleHandle(L"ntdll.dll"), "RtlSetProcessPlaceholderCompatibilityMode")));
     if (RtlSetProcessPlaceholderCompatibilityMode != nullptr)
     {
         constexpr CHAR PHCM_EXPOSE_PLACEHOLDERS = 2;
         RtlSetProcessPlaceholderCompatibilityMode(PHCM_EXPOSE_PLACEHOLDERS);
     }
 
-    // If launches with a parent pid flag, close that process
-    if (cmdInfo.m_ParentPid != 0)
-    {
-        if (SmartPointer<HANDLE> handle(CloseHandle, OpenProcess(PROCESS_TERMINATE, FALSE, cmdInfo.m_ParentPid)); handle != nullptr)
-        {
-            TerminateProcess(handle, 0);
-        }
-    }
-
-
     // Allow user to elevate if desired
-    if (IsElevationAvailable())
+    if (IsElevationAvailable() && COptions::ShowElevationPrompt && !hideApp)
     {
-        if (MessageBox(m_pMainWnd->GetSafeHwnd(), Localization::Lookup(IDS_EVELATION_QUESTION).c_str(),
-            Localization::Lookup(IDS_APP_TITLE).c_str(), MB_YESNO | MB_ICONQUESTION) == IDYES)
+        if (const auto [nID, isChecked] =
+            CMessageBoxDlg::Show(Localization::Lookup(IDS_ELEVATION_QUESTION), Localization::Lookup(IDS_DONT_SHOW_AGAIN),
+                false, MB_YESNO | MB_ICONQUESTION, m_pMainWnd);
+            (COptions::ShowElevationPrompt = !isChecked, nID == IDYES))
         {
-            const std::wstring launchConfig = std::format(LR"(/ParentPid:{} "{}")",
-                GetCurrentProcessId(), m_lpCmdLine);
-            ShellExecuteWrapper(GetAppFileName(), launchConfig, L"runas");
+            if (isChecked) COptions::AutoElevate = true;
+            RunElevated(m_lpCmdLine);
             return FALSE;
         }
     }
 
+    // Load results if specified via command line
+    if (!m_loadFromPath.empty())
+    {
+        if (CItem* newroot = LoadResults(m_loadFromPath); newroot != nullptr)
+        {
+            CDirStatDoc::Get()->OnOpenDocument(newroot);
+        }
+        return TRUE;
+    }
+
     // Either open the file names or open file selection dialog
     cmdInfo.m_strFileName.IsEmpty() ? OnFileOpen() :
-        (void) m_PDocTemplate->OpenDocumentFile(cmdInfo.m_strFileName, true);
+        (void)m_pDocTemplate->OpenDocumentFile(cmdInfo.m_strFileName, true);
 
     return TRUE;
 }
 
 BOOL CDirStatApp::IsIdleMessage(MSG* pMsg)
 {
+    // Treat WM_TIMER as an idle message to prevent excessive OnIdle calls
+    // The timer is used for UI updates and should not trigger idle processing
     if (pMsg->message == WM_TIMER) return FALSE;
-    return CWinApp::IsIdleMessage(pMsg);
+    if (pMsg->message == WM_MOUSEMOVE || pMsg->message == WM_NCMOUSEMOVE) return FALSE;
+    return CWinAppEx::IsIdleMessage(pMsg);
 }
 
 void CDirStatApp::OnAppAbout()
 {
-    StartAboutDialog();
+    CAboutDlg().DoModal();
 }
 
 void CDirStatApp::OnFileOpen()
 {
-    CSelectDrivesDlg dlg;
-    if (IDOK == dlg.DoModal())
+    CopyAllDriveMappings();
+
+    if (CSelectDrivesDlg dlg; IDOK == dlg.DoModal())
     {
-        const std::wstring path = CDirStatDoc::EncodeSelection(dlg.GetSelectedItems());
-        m_PDocTemplate->OpenDocumentFile(path.c_str(), true);
+        const std::wstring path = JoinString(dlg.GetSelectedItems());
+        m_pDocTemplate->OpenDocumentFile(path.c_str(), true);
     }
 }
 
@@ -395,19 +436,12 @@ void CDirStatApp::OnUpdateRunElevated(CCmdUI* pCmdUI)
 
 void CDirStatApp::OnRunElevated()
 {
-    // For the configuration to launch, include the parent process so we can
-    // terminate it once launched from the child process
-    const std::wstring launchConfig = std::format(LR"(/ParentPid:{} "{}")",
-        GetCurrentProcessId(), CDirStatDoc::GetDocument()->GetPathName().GetString());
-    ShellExecuteWrapper(GetAppFileName(), launchConfig, L"runas");
+    RunElevated(CDirStatDoc::Get()->GetPathName().GetString());
 }
 
 void CDirStatApp::OnFilter()
 {
-    COptionsPropertySheet sheet;
-    CPageFiltering filtering;
-    sheet.AddPage(&filtering);
-    sheet.DoModal();
+    COptionsPropertySheet::ShowSettings(1); // 1 = Filtering tab
 }
 
 void CDirStatApp::LaunchHelp()
@@ -425,4 +459,96 @@ void CDirStatApp::OnReportBug()
 {
     ShellExecute(*AfxGetMainWnd(), L"open", Localization::LookupNeutral(IDS_URL_REPORT_BUG).c_str(),
         nullptr, nullptr, SW_SHOWNORMAL);
+}
+
+void CDirStatApp::LegacyUninstall()
+{
+    namespace fs = std::filesystem;
+    std::error_code ec;
+
+    // Kill WinDirStat processes based on executable name
+    if (SmartPointer snap(CloseHandle, CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)); snap.IsValid())
+    {
+        const std::wstring exeName = wds::strWinDirStat;
+        PROCESSENTRY32W pe{ .dwSize = sizeof(pe) };
+        for (BOOL hasProcess = Process32First(snap, &pe); hasProcess; hasProcess = Process32Next(snap, &pe))
+        {
+            if (_wcsnicmp(pe.szExeFile, exeName.c_str(), exeName.size()) != 0 ||
+                pe.th32ProcessID == GetCurrentProcessId()) continue;
+
+            SmartPointer h(CloseHandle, OpenProcess(PROCESS_TERMINATE, FALSE, pe.th32ProcessID));
+            if (h.IsValid()) TerminateProcess(h, 0);
+        }
+    }
+
+    // Collect all registry keys from HKLM and HKU
+    struct RegInfo { HKEY rootKey; std::wstring subKey; };
+    std::vector<RegInfo> regKeys;
+
+    // Add HKLM key
+    regKeys.push_back({ HKEY_LOCAL_MACHINE, wds::strUninstall });
+
+    // Add HKU keys for all users
+    if (CRegKey key; key.Open(HKEY_USERS, nullptr, KEY_ENUMERATE_SUB_KEYS) == ERROR_SUCCESS)
+    {
+        std::array<WCHAR, SECURITY_MAX_SID_STRING_CHARACTERS> sidName;
+        for (DWORD sidSize = static_cast<DWORD>(sidName.size()), i = 0;
+            key.EnumKey(i, sidName.data(), &sidSize) == ERROR_SUCCESS;
+            i++, sidSize = static_cast<DWORD>(sidName.size()))
+        {
+            regKeys.push_back({ HKEY_USERS, std::wstring(sidName.data()) + L"\\" + wds::strUninstall });
+        }
+    }
+
+    // Process all registry keys - query InstallLocation, clean up files, and delete registry keys
+    for (const auto& regInfo : regKeys)
+    {
+        CRegKey key;
+        if (key.Open(regInfo.rootKey, regInfo.subKey.c_str(), KEY_READ) != ERROR_SUCCESS) continue;
+
+        // Query InstallLocation
+        std::array<WCHAR, MAX_PATH> installPath;
+        ULONG size = static_cast<ULONG>(installPath.size());
+        if (key.QueryStringValue(L"InstallLocation", installPath.data(), &size) == ERROR_SUCCESS)
+        {
+            // Clean up installation directory
+            if (fs::path dir(installPath.data()); fs::exists(dir))
+            {
+                for (auto& file : fs::directory_iterator(dir, ec))
+                {
+                    auto fname = MakeLower(file.path().filename().wstring());
+                    if (fname.starts_with(L"wdsh") || fname.starts_with(L"wdsr") ||
+                        fname.starts_with(L"windirstat") || fname == L"uninstall.exe")
+                    {
+                        fs::remove(file, ec);
+                    }
+                }
+                if (fs::is_empty(dir, ec)) fs::remove(dir, ec);
+            }
+        }
+
+        // Delete registry key
+        SHDeleteKey(regInfo.rootKey, regInfo.subKey.c_str());
+    }
+
+    // Remove shortcuts and start menu items for all users
+    constexpr auto startMenuLocation = L"Microsoft\\Windows\\Start Menu\\Programs\\WinDirStat";
+    SmartPointer usersPath(CoTaskMemFree, static_cast<PWSTR>(nullptr));
+    if (SHGetKnownFolderPath(FOLDERID_UserProfiles, 0, nullptr, &usersPath) != S_OK) return;
+    if (fs::path usersDir(static_cast<LPWSTR>(usersPath)); fs::exists(usersDir, ec))
+    {
+        for (auto& userDir : fs::directory_iterator(usersDir, ec))
+        {
+            if (!userDir.is_directory()) continue;
+
+            fs::remove(userDir.path() / L"Desktop\\WinDirStat.lnk", ec);
+            fs::remove_all(userDir.path() / L"AppData\\Roaming" / startMenuLocation, ec);
+        }
+    }
+
+    // Remove ProgramData start menu items
+    std::array<WCHAR, MAX_PATH> programData;
+    if (SHGetFolderPath(nullptr, CSIDL_COMMON_APPDATA, nullptr, 0, programData.data()) != S_OK) return;
+    fs::remove_all(fs::path(programData.data()) / startMenuLocation, ec);
+    ExitProcess(0);
 }

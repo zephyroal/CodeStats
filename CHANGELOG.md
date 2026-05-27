@@ -1,3 +1,122 @@
+<a name="windirstat-2.6.1"></a>
+# WinDirStat 2.6.1
+
+Enhancements
+- Improved gear, pause, filter, and refresh icon rendering
+- Improved icons lookups on latent networks
+- Improved treemap rendering performance
+
+Bug Fixes
+- Corrected some glyphs not rendering on Windows 7
+- Corrected potential compressed size detection issue 
+- Corrected potential reparse point enumeration issues
+- Corrected file-based exclusions context menu option
+- Corrected potential race condition during icon rendering
+- Corrected minor handle leak in drive selection dialog
+- Corrected potential crash when excluding reserved files
+- Corrected Windows Store manifest generation issues
+- Addressed folders not appearing in search results
+
+<a name="windirstat-2.6.0"></a>
+# WinDirStat 2.6.0
+
+Enhancements
+- Improved treemap navigation, zooming, and context-menu behavior
+- Improved FileTreeView keyboard navigation and scroll-to-selection behavior
+- Improved selection handling when sorting file-tree results
+- Improved Select Drives dialog layout and local-drive display
+- Added double-click scan behavior in the Select Drives dialog
+- Added include filters and file age filtering
+- Added filter exclusion context-menu actions
+- Added pruning for previous-folder history
+- Added larger toolbar icon support and runtime-generated toolbar icons
+- Added Settings button to toolbar
+- Improved toolbar rendering with Unicode glyph support
+- Added selectable file hash algorithms
+- Increased size and percentage display precision
+- Changed subtree percentage display to size proportion terminology
+- Added JSON support for saving/loading scan results and duplicate lists
+- Expanded cleanup and system-tool handling
+- Improved localization resources and multiple language updates
+- Added installer option to add WinDirStat to the system PATH, disabled by default
+- Removed OLE dependency to allow execution on Server Core
+- Various performance, memory, and internal refactoring improvements
+
+Bug Fixes
+- Corrected custom folder icon resolution failures
+- Corrected extension column autosizing issues
+- Corrected extension calculations after refresh
+- Correct legacy uninstall registry key removal
+- Addressed selection regressions in owner-data tree/list handling
+- Corrected drive handling when volume names or trailing slashes are missing
+- Corrected cloud-duplication-detection warning behavior
+- Corrected clipboard memory handling
+
+Miscellaneous
+- Added Microsoft Store MSIX packaging support
+- Added Chocolatey release publishing automation
+- Microsoft Windows Server Core now supported
+- Microsoft Windows 7 supported again
+- Microsoft Windows Server 2008 R2 supported again
+
+## Breaking Changes
+- Command line options for saving and loading have changed (see Wiki)
+
+<a name="windirstat-2.5.0"></a>
+# WinDirStat 2.5.0
+
+Enhancements
+- Added dark mode
+- Added direct NTFS MFT scanning option
+- Added hardlink tracking
+- Added progress dialogs for long-running operations
+- Added ability to search scan results
+- Added ability to auto-search from extensions menu
+- Added ability to move files
+- Added ability to compute and display file hashes
+- Added ability to save duplicate files to CSV file
+- Added elevation eligibility detection and prompting
+- Added new keyboard shortcuts
+- Added previous folder tracking history
+- Added option to launch programs and features applet
+- Added option to optimize virtual hard disk files
+- Added command line scanning options
+- Added dism analyze option
+- Added option to toggle Explorer context menu within application
+- Added automatic copying of drive mapping when launched as admin
+- Enhanced DPI awareness
+- Changed sizes to use binary prefixes
+- Changed treemap ability to show logical or physical sizes
+- Changed file scan output to be sorted by path
+- Changed column autosize to respect header width
+- Changed volume display to show free, total, and percentages
+- Changed compression option to recurse directories
+- Changed CSV file output to be sorted by path
+- Improved command-line parsing for target directory
+- Improved delete and empty folder interface behaviors
+- Improved various translations
+- Added Swedish translation
+- Added Japanese translation
+- Added Turkish translation
+- Various performance enhancements
+
+Bug Fixes
+- Corrected icon caching issues that could result in freezing
+- Corrected exclusion case sensitivity selection for filtering
+- Corrected extension colorization not working on file load
+- Corrected highlight offset when not zoomed
+- Corrected Explorer selection in treemap view
+- Corrected potential crash when exiting program
+- Corrected last-sibling node rendering
+- Various other minor bug fixes
+
+Miscellaneous
+- Microsoft Windows 7 no longer supported
+- Microsoft Windows Server 2008 R2 no longer supported
+- ARM 32-Bit builds no longer supported
+- CSV files created with previous versions will not be loadable
+
+<a name="windirstat-2.2.2"></a>
 # WinDirStat 2.2.2
 
 ## Enhancements
@@ -14,6 +133,7 @@
 - Corrected treemap zoomed view hit detection and highlighting
 - Corrected treemap custom grid color not being applied
 
+<a name="windirstat-2.2.1"></a>
 # WinDirStat 2.2.1
 
 ## Enhancements
@@ -36,7 +156,8 @@
 * Addressed numerous potential hanging / crashing scenarios
 * Addressed copy / paste not always working
 * Addressed hiding toolbar and status bar setting persistence
-  
+
+<a name="windirstat-2.1.1"></a>
 # WinDirStat 2.1.1
 
 ## Enhancements
@@ -45,7 +166,7 @@
 * Ability to exclude files by minimum file size
 * Scans now stop quicker when requested during duplicate scan
 * Slightly reduced executable size
-* Better Norwegian tranlsations (thanks @TilKenneth)
+* Better Norwegian translations (thanks @TilKenneth)
 * Improved keyboard navigation on the file deletion dialog box
 * Cleanup option to empty folder
 * Improved file deletion progress indicator
@@ -59,6 +180,7 @@
 * Addressed hover over treemap not showing filename properly
 * Addressed not being able to scan in some Acronis folders
 
+<a name="windirstat-2.0.3"></a>
 # WinDirStat 2.0.3
 
 ## Enhancements
@@ -73,7 +195,8 @@
 * Addressed Norwegian language loading Dutch language
 * Addressed Portuguese mistranslation (thanks @PedroBittarBarao)
 * Addressed various typos in code comments (thanks @NathanBaulch)
-  
+
+<a name="windirstat-2.0.1"></a>
 # WinDirStat 2.0.1
 
 ## Enhancements

@@ -1,19 +1,18 @@
 ﻿// WinDirStat - Directory Statistics
 // Copyright © WinDirStat Team
 //
-// This program is free software; you can redistribute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
+// the Free Software Foundation, either version 2 of the License, or
+// at your option any later version.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
 #pragma once
@@ -21,42 +20,46 @@
 #include "ItemDupe.h"
 #include "TreeListControl.h"
 
-#include <mutex>
-#include <queue>
-#include <set>
-#include <map>
-
 class CFileDupeControl final : public CTreeListControl
 {
 public:
     CFileDupeControl();
-    ~CFileDupeControl() override { m_Singleton = nullptr; }
+    ~CFileDupeControl() override { m_singleton = nullptr; }
     bool GetAscendingDefault(int column) override;
-    static CFileDupeControl* Get() { return m_Singleton; }
+    static CFileDupeControl* Get() { return m_singleton; }
+    CItemDupe* GetRootItem() const { return m_rootItem; }
     void ProcessDuplicate(CItem* item, BlockingQueue<CItem*>* queue);
     void RemoveItem(CItem* items);
     void SortItems() override;
+    void AfterDeleteAllItems() override;
 
-    std::mutex m_HashTrackerMutex;
-    std::map<ULONGLONG, std::vector<CItem*>> m_SizeTracker;
-    std::map<std::vector<BYTE>, std::vector<CItem*>> m_HashTrackerSmall;
-    std::map<std::vector<BYTE>, std::vector<CItem*>> m_HashTrackerLarge;
+    std::mutex m_sizeTrackerMutex;
+    std::map<ULONGLONG, std::vector<CItem*>> m_sizeTracker;
+    std::mutex m_trackerSmallMutex;
+    std::mutex m_trackerMediumMutex;
+    std::mutex m_trackerLargeMutex;
+    std::map<std::vector<BYTE>, std::vector<CItem*>> m_trackerSmall;
+    std::map<std::vector<BYTE>, std::vector<CItem*>> m_trackerMedium;
+    std::map<std::vector<BYTE>, std::vector<CItem*>> m_trackerLarge;
     
-    std::mutex m_NodeTrackerMutex;
-    std::map<std::vector<BYTE>, CItemDupe*> m_NodeTracker;
-    std::map<CItemDupe*, std::set<CItem*>> m_ChildTracker;
-    std::vector<std::pair<CItemDupe*, CItemDupe*>> m_PendingListAdds;
+    std::mutex m_nodeTrackerMutex;
+    std::map<std::vector<BYTE>, CItemDupe*> m_nodeTracker;
+    std::map<CItemDupe*, std::set<CItem*>> m_childTracker;
+    
+    SingleConsumerQueue<std::pair<CItemDupe*, CItemDupe*>> m_pendingListAdds;
 
 protected:
 
-    static constexpr auto m_PartialBufferSize = 128ull * 1024ull;
-    static CFileDupeControl* m_Singleton;
-    bool m_ShowCloudWarningOnThisScan = false;
-    
-    void OnItemDoubleClick(int i) override;
+    constexpr static ULONGLONG HashThreshold(ITEMTYPE hashLevel)
+    {
+        return
+            hashLevel == ITHASH_SMALL ? 4ull * wds::Ki :
+            hashLevel == ITHASH_MEDIUM ? wds::Mi : ULONGLONG_MAX;
+    }
 
+    static CFileDupeControl* m_singleton;
+    CItemDupe* m_rootItem = nullptr;
+    bool m_showCloudWarningOnThisScan = true;
+    
     DECLARE_MESSAGE_MAP()
-    afx_msg void OnSetFocus(CWnd* pOldWnd);
-    afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
-    afx_msg BOOL OnDeleteAllItems(NMHDR* pNMHDR, LRESULT* pResult);
 };

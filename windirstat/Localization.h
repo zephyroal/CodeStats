@@ -1,71 +1,65 @@
 ﻿// WinDirStat - Directory Statistics
 // Copyright © WinDirStat Team
 //
-// This program is free software; you can redistribute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
+// the Free Software Foundation, either version 2 of the License, or
+// at your option any later version.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
 #pragma once
 
-#include "stdafx.h"
-#include "res\LangStrings.h"
-#include "Options.h"
+#include "pch.h"
 
-#include <string>
-#include <unordered_map>
-#include <format>
-
-class Localization
+class Localization final
 {
-    static bool CrackStrings(std::basic_istream<char>& stream, unsigned int streamSize);
+    static bool CrackStrings(const std::wstring& sFileData, const std::wstring& sPrefix = {});
     static void SearchReplace(std::wstring& input, const std::wstring_view& search, const std::wstring_view& replace);
-    static void UpdateWindowText(HWND hwnd);
+    static void UpdateWindowText(CWnd& wnd);
 
 public:
-    static constexpr auto MAX_VALUE_SIZE = 1024;
-    static constexpr auto LANG_RESOURCE_TYPE = L"RT_LANG";
-    static std::unordered_map<std::wstring, std::wstring> m_Map;
+    static std::unordered_map<std::wstring, std::wstring> m_map;
 
     static bool Contains(const std::wstring_view& name)
     {
-        ASSERT(m_Map.contains(std::wstring(name)));
-        return m_Map.contains(std::wstring(name));
+        ASSERT(m_map.contains(std::wstring(name)));
+        return m_map.contains(std::wstring(name));
     }
 
-    static std::wstring Lookup(const std::wstring_view& name, const std::wstring & def = std::wstring())
+    static std::wstring Lookup(const std::wstring_view& name)
     {
-        return Contains(name) ? m_Map[std::wstring(name)] : def;
+        const auto it = m_map.find(std::wstring(name));
+        return it != m_map.end() ? it->second : std::wstring();
     }
 
     static std::wstring LookupNeutral(const UINT res)
     {
         CStringW name;
-        (void) name.LoadStringW(nullptr, res, MAKELANGID(LANG_NEUTRAL,SUBLANG_NEUTRAL));
+        (void) name.LoadString(AfxGetResourceHandle(), res, MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL));
         return name.GetString();
     }
 
     template <typename... Args>
-    static std::wstring Format(std::wstring_view format, const Args&... args)
+    static std::wstring Format(const std::wstring_view format, const Args&... args)
     {
         const auto & formatString = Lookup(format);
         return std::vformat(formatString, std::make_wformat_args(args...));
     }
 
     static void UpdateMenu(CMenu& menu);
-    static void UpdateTabControl(CTabCtrl& tab);
-    static void UpdateDialogs(const CWnd& wnd);
+    static void UpdateTabControl(CMFCTabCtrl& tab);
+    static void UpdateDialogs(CWnd& wnd);
+    static bool LoadExternalLanguage(LCTYPE lcttype, LCID lcid);
     static bool LoadFile(const std::wstring& file);
     static bool LoadResource(WORD language);
-    static std::vector<LANGID> GetLanguageList();
+    static std::wstring ConvertToWideString(const std::string_view& sv);
+    static std::set<LANGID> GetLanguageList();
 };

@@ -1,35 +1,26 @@
 ﻿// WinDirStat - Directory Statistics
 // Copyright © WinDirStat Team
 //
-// This program is free software; you can redistribute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
+// the Free Software Foundation, either version 2 of the License, or
+// at your option any later version.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-#include "stdafx.h"
-#include "WinDirStat.h"
-#include "MainFrame.h"
+#include "pch.h"
 #include "PageGeneral.h"
-#include "DirStatDoc.h"
-#include "Options.h"
-#include "GlobalHelpers.h"
-#include "Localization.h"
 
-IMPLEMENT_DYNAMIC(CPageGeneral, CPropertyPageEx)
+IMPLEMENT_DYNAMIC(CPageGeneral, CMFCPropertyPage)
 
-CPageGeneral::CPageGeneral() : CPropertyPageEx(IDD) {}
-
-CPageGeneral::~CPageGeneral() = default;
+CPageGeneral::CPageGeneral() : CMFCPropertyPage(IDD) {}
 
 COptionsPropertySheet* CPageGeneral::GetSheet() const
 {
@@ -40,22 +31,25 @@ COptionsPropertySheet* CPageGeneral::GetSheet() const
 
 void CPageGeneral::DoDataExchange(CDataExchange* pDX)
 {
-    CPropertyPageEx::DoDataExchange(pDX);
-    DDX_Check(pDX, IDC_COLUMN_AUTOSIZE, m_AutomaticallyResizeColumns);
-    DDX_Check(pDX, IDC_DELETION_WARNING, m_ShowDeletionWarning);
-    DDX_Check(pDX, IDC_FULL_ROW_SELECTION, m_ListFullRowSelection);
-    DDX_Check(pDX, IDC_PORTABLE_MODE, m_PortableMode);
-    DDX_Check(pDX, IDC_SHOW_GRID, m_ListGrid);
-    DDX_Check(pDX, IDC_SHOW_STRIPES, m_ListStripes);
-    DDX_Check(pDX, IDC_SIZE_SUFFIXES, m_SizeSuffixesFormat);
-    DDX_Check(pDX, IDC_USE_WINDOWS_LOCALE, m_UseWindowsLocale);
-    DDX_Check(pDX, IDC_SHOW_LINE_COUNT_INSTEAD_OF_SIZE, m_ShowLineCountInsteadOfSize);
-    DDX_Control(pDX, IDC_COMBO, m_Combo);
+    CMFCPropertyPage::DoDataExchange(pDX);
+    DDX_Check(pDX, IDC_AUTO_ELEVATE, m_automaticallyElevateOnStartup);
+    DDX_Check(pDX, IDC_COLUMN_AUTOSIZE, m_automaticallyResizeColumns);
+    DDX_Check(pDX, IDC_CONTEXT_MENU, m_contextMenuIntegration);
+    DDX_Check(pDX, IDC_FULL_ROW_SELECTION, m_listFullRowSelection);
+    DDX_Check(pDX, IDC_PORTABLE_MODE, m_portableMode);
+    DDX_Check(pDX, IDC_SHOW_GRID, m_listGrid);
+    DDX_Check(pDX, IDC_SHOW_STRIPES, m_listStripes);
+    DDX_Check(pDX, IDC_SIZE_SUFFIXES, m_sizeSuffixesFormat);
+    DDX_Check(pDX, IDC_USE_WINDOWS_LOCALE, m_useWindowsLocale);
+    DDX_Check(pDX, IDC_SHOW_LINE_COUNT_INSTEAD_OF_SIZE, m_showLineCountInsteadOfSize);
+    DDX_Control(pDX, IDC_COMBO, m_combo);
+    DDX_Radio(pDX, IDC_DARK_MODE_DISABLED, m_darkModeRadio);
 }
 
-BEGIN_MESSAGE_MAP(CPageGeneral, CPropertyPageEx)
+BEGIN_MESSAGE_MAP(CPageGeneral, CMFCPropertyPage)
+    ON_BN_CLICKED(IDC_AUTO_ELEVATE, OnBnClickedSetModified)
     ON_BN_CLICKED(IDC_COLUMN_AUTOSIZE, OnBnClickedSetModified)
-    ON_BN_CLICKED(IDC_DELETION_WARNING, OnBnClickedSetModified)
+    ON_BN_CLICKED(IDC_CONTEXT_MENU, OnBnClickedSetModified)
     ON_BN_CLICKED(IDC_FULL_ROW_SELECTION, OnBnClickedSetModified)
     ON_BN_CLICKED(IDC_PORTABLE_MODE, OnBnClickedSetModified)
     ON_BN_CLICKED(IDC_SHOW_GRID, OnBnClickedSetModified)
@@ -63,32 +57,94 @@ BEGIN_MESSAGE_MAP(CPageGeneral, CPropertyPageEx)
     ON_BN_CLICKED(IDC_SIZE_SUFFIXES, OnBnClickedSetModified)
     ON_BN_CLICKED(IDC_USE_WINDOWS_LOCALE, OnBnClickedSetModified)
     ON_BN_CLICKED(IDC_SHOW_LINE_COUNT_INSTEAD_OF_SIZE, OnBnClickedSetModified)
-    ON_CBN_SELENDOK(IDC_COMBO, OnCbnSelendokCombo)
+    ON_BN_CLICKED(IDC_DARK_MODE_DISABLED, OnBnClickedSetModified)
+    ON_BN_CLICKED(IDC_DARK_MODE_ENABLED, OnBnClickedSetModified)
+    ON_BN_CLICKED(IDC_DARK_MODE_USE_WINDOWS, OnBnClickedSetModified)
+    ON_CBN_SELENDOK(IDC_COMBO, OnBnClickedSetModified)
+    ON_WM_CTLCOLOR()
 END_MESSAGE_MAP()
+
+HBRUSH CPageGeneral::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
+{
+    const HBRUSH brush = DarkMode::OnCtlColor(pDC, nCtlColor);
+    return brush ? brush : CMFCPropertyPage::OnCtlColor(pDC, pWnd, nCtlColor);
+}
+bool CPageGeneral::IsContextMenuRegistered()
+{
+    return CRegKey().Open(HKEY_CLASSES_ROOT, std::format(L"Drive\\shell\\{}",
+        wds::strWinDirStat).c_str(), KEY_READ) == ERROR_SUCCESS;
+}
+
+bool CPageGeneral::SetContextMenuRegistration(bool enable)
+{
+    for (const std::wstring& rootSubKey : { L"Drive", L"Directory" })
+    {
+        const std::wstring baseKey = rootSubKey + L"\\shell\\" + wds::strWinDirStat;
+
+        if (!enable)
+        {
+            // Remove the context menu entries
+            RegDeleteTree(HKEY_CLASSES_ROOT, baseKey.c_str());
+            continue;
+        }
+
+        // Create/open the base key
+        CRegKey key;
+        const std::wstring exePath = GetAppFileName();
+        if (key.Create(HKEY_CLASSES_ROOT, baseKey.c_str()) != ERROR_SUCCESS ||
+            key.SetStringValue(nullptr, wds::strWinDirStat) != ERROR_SUCCESS ||
+            key.SetStringValue(L"Icon", exePath.c_str()) != ERROR_SUCCESS)
+        {
+            SetContextMenuRegistration(false);
+            return false;
+        }
+
+        // Create/open the command key
+        const std::wstring cmdKey = baseKey + L"\\command";
+        const std::wstring cmdVal = std::format(LR"("{}" "%1")", exePath);
+        if (key.Create(HKEY_CLASSES_ROOT, cmdKey.c_str()) != ERROR_SUCCESS ||
+            key.SetStringValue(nullptr, cmdVal.c_str()) != ERROR_SUCCESS)
+        {
+            SetContextMenuRegistration(false);
+            return false;
+        }
+    }
+
+    return true;
+}
 
 BOOL CPageGeneral::OnInitDialog()
 {
-    CPropertyPageEx::OnInitDialog();
+    CMFCPropertyPage::OnInitDialog();
 
     Localization::UpdateDialogs(*this);
+    DarkMode::AdjustControls(GetSafeHwnd());
 
-    m_AutomaticallyResizeColumns = COptions::AutomaticallyResizeColumns;
-    m_SizeSuffixesFormat = COptions::UseSizeSuffixes;
-    m_ListGrid = COptions::ListGrid;
-    m_ListStripes = COptions::ListStripes;
-    m_ShowDeletionWarning = COptions::ShowDeleteWarning;
-    m_ListFullRowSelection = COptions::ListFullRowSelection;
-    m_UseWindowsLocale = COptions::UseWindowsLocaleSetting;
-    m_ShowLineCountInsteadOfSize = COptions::ShowLineCountInsteadOfSize;
-    m_PortableMode = CDirStatApp::InPortableMode();
-
-    for (const auto & language : Localization::GetLanguageList())
+    m_automaticallyElevateOnStartup = COptions::AutoElevate;
+    m_automaticallyResizeColumns = COptions::AutomaticallyResizeColumns;
+    m_sizeSuffixesFormat = COptions::UseSizeSuffixes;
+    m_listGrid = COptions::ListGrid;
+    m_listStripes = COptions::ListStripes;
+    m_listFullRowSelection = COptions::ListFullRowSelection;
+    m_useWindowsLocale = COptions::UseWindowsLocaleSetting;
+    m_showLineCountInsteadOfSize = COptions::ShowLineCountInsteadOfSize;
+    m_portableMode = CDirStatApp::InPortableMode();
+    m_darkModeRadio = COptions::DarkMode;
+    
+    // Query checkbox status and then gray out if not elevated
+    m_contextMenuIntegration = IsContextMenuRegistered() ? TRUE : FALSE;
+    if (CWnd* pWnd = GetDlgItem(IDC_CONTEXT_MENU); pWnd != nullptr && !IsElevationActive())
     {
-        const int i = m_Combo.AddString(GetLocaleLanguage(language).c_str());
-        m_Combo.SetItemData(i, language);
+        pWnd->EnableWindow(FALSE);
+    }
+
+    for (const auto& language : Localization::GetLanguageList())
+    {
+        const int i = m_combo.AddString(GetLocaleLanguage(language).c_str());
+        m_combo.SetItemData(i, language);
         if (language == COptions::LanguageId)
         {
-            m_Combo.SetCurSel(i);
+            m_combo.SetCurSel(i);
         }
     }
 
@@ -100,49 +156,68 @@ void CPageGeneral::OnOK()
 {
     UpdateData();
 
-    const bool windowsLocaleChanged = static_cast<bool>(m_UseWindowsLocale) != COptions::UseWindowsLocaleSetting;
-    const bool listChanged = static_cast<bool>(m_ListGrid) != COptions::ListGrid ||
-        static_cast<bool>(m_ListStripes) != COptions::ListStripes ||
-        static_cast<bool>(m_ListFullRowSelection) != COptions::ListFullRowSelection ||
-        static_cast<bool>(m_SizeSuffixesFormat) != COptions::UseSizeSuffixes;
+    const bool windowsLocaleChanged = static_cast<bool>(m_useWindowsLocale) != COptions::UseWindowsLocaleSetting;
+    const bool listChanged = static_cast<bool>(m_listGrid) != COptions::ListGrid ||
+        static_cast<bool>(m_listStripes) != COptions::ListStripes ||
+        static_cast<bool>(m_listFullRowSelection) != COptions::ListFullRowSelection ||
+        static_cast<bool>(m_sizeSuffixesFormat) != COptions::UseSizeSuffixes;
 
-    COptions::AutomaticallyResizeColumns = (FALSE != m_AutomaticallyResizeColumns);
-    COptions::UseSizeSuffixes = (FALSE != m_SizeSuffixesFormat);
-    COptions::UseWindowsLocaleSetting = (FALSE != m_UseWindowsLocale);
-    COptions::ListGrid = (FALSE != m_ListGrid);
-    COptions::ListStripes = (FALSE != m_ListStripes);
-    COptions::ShowDeleteWarning = (FALSE != m_ShowDeletionWarning);
-    COptions::ListFullRowSelection = (FALSE != m_ListFullRowSelection);
-    COptions::ShowLineCountInsteadOfSize = (FALSE != m_ShowLineCountInsteadOfSize);
-    if (!CDirStatApp::Get()->SetPortableMode(m_PortableMode))
+    COptions::AutoElevate = (FALSE != m_automaticallyElevateOnStartup);
+    COptions::AutomaticallyResizeColumns = (FALSE != m_automaticallyResizeColumns);
+    COptions::UseSizeSuffixes = (FALSE != m_sizeSuffixesFormat);
+    COptions::UseWindowsLocaleSetting = (FALSE != m_useWindowsLocale);
+    COptions::ListGrid = (FALSE != m_listGrid);
+    COptions::ListStripes = (FALSE != m_listStripes);
+    COptions::ListFullRowSelection = (FALSE != m_listFullRowSelection);
+    COptions::ShowLineCountInsteadOfSize = (FALSE != m_showLineCountInsteadOfSize);
+    COptions::DarkMode = m_darkModeRadio;
+
+    if (!CDirStatApp::Get()->SetPortableMode(m_portableMode))
     {
         DisplayError(L"Could not toggle WinDirStat portable mode. Check your permissions.");
     }
+    
+    // Update context menu registration if elevated
+    const bool shouldBeRegistered = (m_contextMenuIntegration != FALSE);      
+    if (IsContextMenuRegistered() != shouldBeRegistered && IsElevationActive())
+    {
+        SetContextMenuRegistration(shouldBeRegistered);
+    }
 
     // force general user interface update if anything changes
-    if (listChanged)
+    if (const CDirStatDoc* doc = CDirStatDoc::Get(); listChanged && doc != nullptr)
     {
-        CDirStatDoc::GetDocument()->UpdateAllViews(nullptr, HINT_LISTSTYLECHANGED);
+        // Iterate over all drive items and update their display names/free space item sizes
+        if (const CItem* root = doc->GetRootItem(); root != nullptr)
+        {
+            for (CItem* item : root->GetDriveItems())
+            {
+                item->UpdateFreeSpaceItem();
+            }
+        }
+
+        CDirStatDoc::Get()->UpdateAllViews(nullptr, HINT_LISTSTYLECHANGED);
     }
     if (windowsLocaleChanged)
     {
-        CDirStatDoc::GetDocument()->UpdateAllViews(nullptr, HINT_NULL);
+        CDirStatDoc::Get()->UpdateAllViews(nullptr, HINT_NULL);
     }
 
-    const LANGID id = static_cast<LANGID>(m_Combo.GetItemData(m_Combo.GetCurSel()));
+    const LANGID id = static_cast<LANGID>(m_combo.GetItemData(m_combo.GetCurSel()));
     COptions::LanguageId = static_cast<int>(id);
 
-    CPropertyPageEx::OnOK();
+    CMFCPropertyPage::OnOK();
 }
 
 void CPageGeneral::OnBnClickedSetModified()
 {
-    SetModified();
-}
+    UpdateData(TRUE);
 
-void CPageGeneral::OnCbnSelendokCombo()
-{
-    const LANGID langid = static_cast<LANGID>(m_Combo.GetItemData(m_Combo.GetCurSel()));
-    GetSheet()->SetLanguageChanged(langid != COptions::LanguageId);
+    // Assess for restart required
+    const LANGID id = static_cast<LANGID>(m_combo.GetItemData(m_combo.GetCurSel()));
+    const bool languageChanged = id != static_cast<LANGID>(COptions::LanguageId);
+    const bool darkModeChanged = m_darkModeRadio != COptions::DarkMode;
+    GetSheet()->SetRestartRequired(darkModeChanged || languageChanged);
+
     SetModified();
 }

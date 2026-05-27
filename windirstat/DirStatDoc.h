@@ -1,70 +1,72 @@
 ﻿// WinDirStat - Directory Statistics
 // Copyright © WinDirStat Team
 //
-// This program is free software; you can redistribute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
+// the Free Software Foundation, either version 2 of the License, or
+// at your option any later version.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
 #pragma once
 
-#include "SelectDrivesDlg.h"
-#include "BlockingQueue.h"
-#include "Options.h"
-#include "GlobalHelpers.h"
+#include "pch.h"
 #include "TreeListControl.h"
-
-#include <unordered_map>
-#include <vector>
 
 class CItem;
 class CItemDupe;
 class CItemTop;
 class CItemSearch;
-
-//
-// The treemap colors as calculated in CDirStatDoc::SetExtensionColors()
-// all have the "brightness" BASE_BRIGHTNESS.
-// I define brightness as a number from 0 to 3.0: (r+g+b)/255.
-// RGB(127, 255, 0), for example, has a brightness of 2.5.
-//
-#define BASE_BRIGHTNESS 1.8
+enum LOGICAL_FOCUS : uint8_t;
 
 //
 // Data stored for each extension.
 //
-struct SExtensionRecord
+struct alignas(std::hardware_destructive_interference_size) SExtensionRecord
 {
     std::atomic<ULONGLONG> files = 0;
     std::atomic<ULONGLONG> bytes = 0;
     COLORREF color = 0;
+
+    // Use relaxed memory ordering for simple accumulation operations
+    void AddFile(const ULONGLONG size) noexcept
+    {
+        files.fetch_add(1, std::memory_order_relaxed);
+        bytes.fetch_add(size, std::memory_order_relaxed);
+    }
+
+    void RemoveFile(const ULONGLONG size) noexcept
+    {
+        files.fetch_sub(1, std::memory_order_relaxed);
+        bytes.fetch_sub(size, std::memory_order_relaxed);
+    }
+
+    ULONGLONG GetFiles() const noexcept { return files.load(std::memory_order_relaxed); }
+    ULONGLONG GetBytes() const noexcept { return bytes.load(std::memory_order_relaxed); }
 };
 
 //
-// Maps an extension (".bmp") to an SExtensionRecord.
+// Maps an extension to an SExtensionRecord.
 //
 using CExtensionData = std::unordered_map<std::wstring, SExtensionRecord>;
 
 //
 // Hints for UpdateAllViews()
 //
-enum : std::uint8_t
+using VIEW_HINT = enum VIEW_HINT : std::uint8_t
 {
     HINT_NULL,                      // General update
     HINT_NEWROOT,                   // Root item has changed - clear everything.
     HINT_SELECTIONACTION,           // Inform central selection handler to update selection (uses pHint)
     HINT_SELECTIONREFRESH,          // Inform all views to redraw based on current selections
-    HINT_SELECTIONSTYLECHANGED,     // Only update selection in Graphview
+    HINT_SELECTIONSTYLECHANGED,     // Only update selection in TreeMapView
     HINT_EXTENSIONSELECTIONCHANGED, // Type list selected a new extension
     HINT_ZOOMCHANGED,               // Only zoom item has changed.
     HINT_LISTSTYLECHANGED,          // Options: List style (grid/stripes) or treelist colors changed
@@ -78,16 +80,13 @@ enum : std::uint8_t
 class CDirStatDoc final : public CDocument
 {
 public:
-    static CDirStatDoc* GetDocument();
+    static CDirStatDoc* Get() { return s_singleton; }
 
 protected:
     CDirStatDoc(); // Created by MFC only
     DECLARE_DYNCREATE(CDirStatDoc)
 
     ~CDirStatDoc() override;
-
-    static std::wstring EncodeSelection(const std::vector<std::wstring>& folders);
-    static std::vector<std::wstring> DecodeSelection(const std::wstring& encodedPath);
 
     void DeleteContents() override;
     BOOL OnNewDocument() override;
@@ -110,13 +109,10 @@ protected:
     bool IsScanRunning() const;
     CItem* GetRootItem() const;
     CItem* GetZoomItem() const;
-    CItemDupe* GetRootItemDupe() const;
-    CItemTop* GetRootItemTop() const;
-    CItemSearch* GetRootItemSearch() const;
     bool IsZoomed() const;
 
     void SetHighlightExtension(const std::wstring& ext);
-    std::wstring GetHighlightExtension();
+    std::wstring GetHighlightExtension() const;
 
     void UnlinkRoot();
     bool UserDefinedCleanupWorksForItem(USERDEFINEDCLEANUP* udc, const CItem* item) const;
@@ -129,9 +125,8 @@ protected:
     static void OpenItem(const CItem* item, const std::wstring& verb = {});
 
     void RecurseRefreshReparsePoints(CItem* items) const;
-    std::vector<CItem*> GetDriveItems() const;
     void RebuildExtensionData();
-    bool DeletePhysicalItems(const std::vector<CItem*>& items, bool toTrashBin, bool bypassWarning = false, bool doRefresh = true);
+    void DeletePhysicalItems(const std::vector<CItem*>& items, bool toTrashBin, bool emptyOnly = false) const;
     void SetZoomItem(CItem* item);
     static void AskForConfirmation(USERDEFINEDCLEANUP* udc, const CItem* item);
     void PerformUserDefinedCleanup(USERDEFINEDCLEANUP* udc, const CItem* item);
@@ -143,39 +138,44 @@ protected:
     CItem* PopReselectChild();
     void ClearReselectChildStack();
     bool IsReselectChildAvailable() const;
-    static CompressionAlgorithm CompressionIdToAlg(UINT id);
+    static constexpr CompressionAlgorithm CompressionIdToAlg(UINT id);
     static bool FileTreeHasFocus();
     static bool DupeListHasFocus();
     static bool TopListHasFocus();
     static bool SearchListHasFocus();
-    static std::vector<CItem*> GetAllSelected();
+    static bool WatcherListHasFocus();
+    std::vector<CItem*> GetAllSelected();
+    void InvalidateSelectionCache();
     static CTreeListControl* GetFocusControl();
+    void UpdateAllViews(CView* pSender, VIEW_HINT hint = HINT_NULL, CItem* pHint = nullptr);
 
-    static CDirStatDoc* _theDocument;
+    static CDirStatDoc* s_singleton;
 
-    bool m_ShowFreeSpace; // Whether to show the <Free Space> item
-    bool m_ShowUnknown;   // Whether to show the <Unknown> item
-    // In this case, we need a root pseudo item ("My Computer").
+    CItem* m_rootItem = nullptr; // The very root item
+    CItem* m_zoomItem = nullptr;   // Current "zoom root"
+    std::wstring m_highlightExtension; // Currently highlighted extension
 
-    CItem* m_RootItem = nullptr; // The very root item
-    CItemDupe* m_RootItemDupe = nullptr; // The very root dupe item
-    CItemTop* m_RootItemTop = nullptr; // The very root top item
-    CItemSearch* m_RootItemSearch = nullptr; // The very root search item
-    std::wstring m_HighlightExtension; // Currently highlighted extension
-    CItem* m_ZoomItem = nullptr;   // Current "zoom root"
+    std::mutex m_extensionMutex;
+    CExtensionData m_extensionData;    // Base for the extension view and cushion colors
 
-    std::mutex m_ExtensionMutex;
-    CExtensionData m_ExtensionData;    // Base for the extension view and cushion colors
-
-    CList<CItem*, CItem*> m_ReselectChildStack; // Stack for the "Re-select Child"-Feature
+    std::vector<CItem*> m_reselectChildStack; // Stack for the "Re-select Child"-Feature
 
     std::unordered_map<std::wstring, BlockingQueue<CItem*>> m_queues; // The scanning and thread queue
-    std::thread* m_thread = nullptr; // Wrapper thread so we do not occupy the UI thread
+    std::optional<std::jthread> m_thread; // Wrapper thread so we do not occupy the UI thread
+
+    // Cache for GetAllSelected to avoid expensive queries
+    LOGICAL_FOCUS m_cachedFocus{}; 
+    std::vector<CItem*> m_cachedSelection;
+    bool m_selectionCacheValid = false;
+
+    bool m_showFreeSpace; // Whether to show the <Free Space> item
+    bool m_showUnknown;   // Whether to show the <Unknown> item
 
     DECLARE_MESSAGE_MAP()
     afx_msg void OnRefreshSelected();
     afx_msg void OnRefreshAll();
     afx_msg void OnSaveResults();
+    afx_msg void OnSaveDuplicates();
     afx_msg void OnLoadResults();
     afx_msg void OnEditCopy();
     afx_msg void OnCleanupEmptyRecycleBin();
@@ -187,9 +187,13 @@ protected:
     afx_msg void OnViewShowUnknown();
     afx_msg void OnTreeMapZoomIn();
     afx_msg void OnTreeMapZoomOut();
+    afx_msg void OnTreeMapZoomReset();
     afx_msg void OnRemoveRoamingProfiles();
+    afx_msg void OnRemoveLocalProfiles();
     afx_msg void OnDisableHibernateFile();
     afx_msg void OnExecuteDiskCleanupUtility();
+    afx_msg void OnExecuteProgramsFeatures();
+    afx_msg void OnExecuteDismAnalyze();
     afx_msg void OnExecuteDismReset();
     afx_msg void OnExecuteDism();
     afx_msg void OnExplorerSelect();
@@ -205,9 +209,19 @@ protected:
     afx_msg void OnTreeMapReselectChild();
     afx_msg void OnCleanupOpenTarget();
     afx_msg void OnCleanupProperties();
+    afx_msg void OnComputeHash();
     afx_msg void OnCleanupCompress(UINT id);
+    afx_msg void OnCleanupOptimizeVhd();
+    afx_msg void OnCleanupSparsifyFile();
     afx_msg void OnScanSuspend();
     afx_msg void OnScanResume();
     afx_msg void OnScanStop();
     afx_msg void OnContextMenuExplore(UINT nID);
+    afx_msg void OnRemoveShadowCopies();
+    afx_msg void OnCleanupMoveTo();
+    afx_msg void OnRemoveMarkOfTheWebTags();
+    afx_msg void OnUpdateCreateHardlink(CCmdUI* pCmdUI);
+    afx_msg void OnCreateHardlink();
+    afx_msg void OnFilterExcludeItem();
+    afx_msg void OnPopupCancel() {}
 };
