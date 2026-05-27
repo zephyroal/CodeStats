@@ -1,25 +1,21 @@
 ﻿// WinDirStat - Directory Statistics
 // Copyright © WinDirStat Team
 //
-// This program is free software; you can redistribute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
+// the Free Software Foundation, either version 2 of the License, or
+// at your option any later version.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
 #pragma once
-
-#include <vector>
-#include <string>
 
 class PersistedSetting
 {
@@ -27,8 +23,8 @@ protected:
 
     static std::vector<PersistedSetting*>& GetPropertySet();
     static bool ReadBinaryProperty(const std::wstring & section, const std::wstring & entry, LPVOID dest, size_t size);
-    std::wstring m_Entry;
-    std::wstring m_Section;
+    std::wstring m_entry;
+    std::wstring m_section;
 
 public:
 
@@ -57,7 +53,7 @@ public:
     {
         for (const auto & p : GetPropertySet())
         {
-            if (p->m_Section.empty()) continue;
+            if (p->m_section.empty()) continue;
             p->WritePersistedProperty();
         }
     }
@@ -66,59 +62,57 @@ public:
 template <typename T = void>
 class Setting final : PersistedSetting
 {
-    T m_Value{};
-    T m_Min{};
-    T m_Max{};
+    T m_value{};
+    T m_min{};
+    T m_max{};
 
 public:
 
-    T* Ptr() { return &m_Value; }
-    T& Obj() { return m_Value; }
-    const T& Obj() const { return m_Value; }
+    T* Ptr() noexcept { return &m_value; }
+    T& Obj() noexcept { return m_value; }
+    const T& Min() const noexcept { return m_min; }
+    const T& Max() const noexcept { return m_max; }
+    const T& Obj() const noexcept { return m_value; }
 
     // Member persistence read/write settings
     void ReadPersistedProperty() override;
     void WritePersistedProperty() override;
 
     // Implicit conversion back to T.
-    operator const T& () { return m_Value; }
+    operator const T& () noexcept { return m_value; }
 
     // Copy assignment operators
-    T operator=(T other) { return (m_Value = other); }
-    T operator=(Setting<T> other) { return (m_Value = other.m_Value); }
+    T& operator=(const T& other) noexcept { return (m_value = other); }
+    T& operator=(const Setting& other) noexcept { return (m_value = other.m_value); }
 
     // Math operators
-    T operator++() { return ++m_Value; }
-    T operator--() { return --m_Value; }
-    T operator++(int) { return m_Value++; }
-    T operator--(int) { return m_Value--; }
-    T operator+=(const T& other) { return m_Value = m_Value + other; }
-    T operator-=(const T& other) { return m_Value = m_Value - other; }
-    T operator+(const T& other) { return m_Value + other; }
-    T operator-(const T& other) { return m_Value - other; }
-    T operator*(const T& other) { return m_Value * other; }
-    T operator/(const T& other) { return m_Value / other; }
+    T& operator++() noexcept { return ++m_value; }
+    T& operator--() noexcept { return --m_value; }
+    T operator++(int) noexcept { return m_value++; }
+    T operator--(int) noexcept { return m_value--; }
+    T& operator+=(const T& other) noexcept { return m_value = m_value + other; }
+    T& operator-=(const T& other) noexcept { return m_value = m_value - other; }
+    T operator+(const T& other) noexcept { return m_value + other; }
+    T operator-(const T& other) noexcept { return m_value - other; }
+    T operator*(const T& other) noexcept { return m_value * other; }
+    T operator/(const T& other) noexcept { return m_value / other; }
 
     // Forces identical type assignment
-    template <typename T2> T2& operator=(const T2&)
-    {
-        const T2& guard = m_Value;
-        throw guard; // Never reached.
-    }
+    template <typename T2> T2& operator=(const T2&) = delete;
 
     Setting(const std::wstring& section, const std::wstring& entry, const T& defaultValue = {}, const T& checkMin = {}, const T& checkMax = {}) :
-        m_Value(defaultValue), m_Min(checkMin), m_Max(checkMax)
+        m_value(defaultValue), m_min(checkMin), m_max(checkMax)
     {
-        m_Entry = entry;
-        m_Section = section;
+        m_entry = entry;
+        m_section = section;
     }
 
     // Default constructor (used by non-persisted properties)
-    Setting<T>() = default;
-    ~Setting<T>() override = default;
+    Setting() = default;
+    ~Setting() override = default;
 
     // Move constructor to allow for use in dynamic containers
-    Setting(Setting&& other) noexcept : Setting(other.m_Section, other.m_Entry, other.m_Value, other.m_Min, other.m_Max) {}
+    Setting(Setting&& other) noexcept : Setting(other.m_section, other.m_entry, other.m_value, other.m_min, other.m_max) {}
 };
 
 // explicit instantiation declaration

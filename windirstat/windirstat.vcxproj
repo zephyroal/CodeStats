@@ -62,14 +62,6 @@
     <UseOfMfc>Static</UseOfMfc>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v143</PlatformToolset>
-    <UseOfMfc>Static</UseOfMfc>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
@@ -103,9 +95,6 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
@@ -160,8 +149,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(ProjectDir);$(ProjectDir)Controls\;$(ProjectDir)Dialogs\;$(ProjectDir)Pages\;$(ProjectDir)Views\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_DEBUG;VTRACE_TO_CONSOLE=1;VTRACE_DETAIL=2;WINVER=_WIN32_WINNT_WIN7;_WIN32_WINNT=_WIN32_WINNT_WIN7;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(ProjectDir);$(ProjectDir)Controls\;$(ProjectDir)Dialogs\;$(ProjectDir)Pages\;$(ProjectDir)Views\;$(ProjectDir)Res\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_DEBUG;WINVER=_WIN32_WINNT_WIN7;_WIN32_WINNT=_WIN32_WINNT_WIN7;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <SmallerTypeCheck>false</SmallerTypeCheck>
@@ -176,9 +165,11 @@
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <AdditionalOptions>/utf-8 $(ExternalCompilerOptions)</AdditionalOptions>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <DisableSpecificWarnings>4324</DisableSpecificWarnings>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>_DEBUG;VTRACE_TO_CONSOLE=1;VTRACE_DETAIL=2;WINVER=0x0601;_WIN32_WINNT=0x0601;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;WINVER=0x0601;_WIN32_WINNT=0x0601;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..;.;Controls;Dialogs;..;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
@@ -190,6 +181,7 @@
       <TargetMachine>MachineX86</TargetMachine>
       <AdditionalOptions>/pdbaltpath:%_PDB% /nodefaultlib:libcmt %(AdditionalOptions)</AdditionalOptions>
       <Profile>false</Profile>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <Manifest>
       <AdditionalManifestFiles>res\windirstat.manifest</AdditionalManifestFiles>
@@ -206,8 +198,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(ProjectDir);$(ProjectDir)Controls\;$(ProjectDir)Dialogs\;$(ProjectDir)Pages\;$(ProjectDir)Views\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_DEBUG;VTRACE_TO_CONSOLE=1;VTRACE_DETAIL=2;WINVER=_WIN32_WINNT_WIN7;_WIN32_WINNT=_WIN32_WINNT_WIN7;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(ProjectDir);$(ProjectDir)Controls\;$(ProjectDir)Dialogs\;$(ProjectDir)Pages\;$(ProjectDir)Views\;$(ProjectDir)Res\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_DEBUG;WINVER=_WIN32_WINNT_WIN7;_WIN32_WINNT=_WIN32_WINNT_WIN7;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <SmallerTypeCheck>false</SmallerTypeCheck>
@@ -222,9 +214,11 @@
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <AdditionalOptions>/utf-8 $(ExternalCompilerOptions)</AdditionalOptions>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <DisableSpecificWarnings>4324</DisableSpecificWarnings>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>_DEBUG;VTRACE_TO_CONSOLE=1;VTRACE_DETAIL=2;WINVER=0x0601;_WIN32_WINNT=0x0601;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;WINVER=0x0601;_WIN32_WINNT=0x0601;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..;.;Controls;Dialogs;..;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
@@ -236,6 +230,7 @@
       <TargetMachine>MachineX64</TargetMachine>
       <AdditionalOptions>/pdbaltpath:%_PDB% /nodefaultlib:libcmt %(AdditionalOptions)</AdditionalOptions>
       <Profile>false</Profile>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PreBuildEvent>
       <Command>POWERSHELL.EXE -NoLogo -ExecutionPolicy Unrestricted -NoProfile -File "$(ProjectDir)Build\Compress Strings.ps1" -Path "$(ProjectDir)res"</Command>
@@ -252,8 +247,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(ProjectDir);$(ProjectDir)Controls\;$(ProjectDir)Dialogs\;$(ProjectDir)Pages\;$(ProjectDir)Views\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_DEBUG;VTRACE_TO_CONSOLE=1;VTRACE_DETAIL=2;WINVER=_WIN32_WINNT_WIN7;_WIN32_WINNT=_WIN32_WINNT_WIN7;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(ProjectDir);$(ProjectDir)Controls\;$(ProjectDir)Dialogs\;$(ProjectDir)Pages\;$(ProjectDir)Views\;$(ProjectDir)Res\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_DEBUG;WINVER=_WIN32_WINNT_WIN7;_WIN32_WINNT=_WIN32_WINNT_WIN7;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <SmallerTypeCheck>false</SmallerTypeCheck>
@@ -268,9 +263,11 @@
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <AdditionalOptions>/utf-8 $(ExternalCompilerOptions)</AdditionalOptions>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <DisableSpecificWarnings>4324</DisableSpecificWarnings>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>_DEBUG;VTRACE_TO_CONSOLE=1;VTRACE_DETAIL=2;WINVER=0x0601;_WIN32_WINNT=0x0601;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;WINVER=0x0601;_WIN32_WINNT=0x0601;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..;.;Controls;Dialogs;..;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
@@ -281,6 +278,7 @@
       <OutputFile>$(OutDir)$(TargetName).exe</OutputFile>
       <AdditionalOptions>/pdbaltpath:%_PDB% /nodefaultlib:libcmt %(AdditionalOptions)</AdditionalOptions>
       <Profile>false</Profile>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PreBuildEvent>
       <Command>POWERSHELL.EXE -NoLogo -ExecutionPolicy Unrestricted -NoProfile -File "$(ProjectDir)Build\Compress Strings.ps1" -Path "$(ProjectDir)res"</Command>
@@ -296,10 +294,10 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalOptions>/utf-8 $(ExternalCompilerOptions)</AdditionalOptions>
+      <AdditionalOptions>/utf-8 /Gw $(ExternalCompilerOptions)</AdditionalOptions>
       <Optimization>Full</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(ProjectDir);$(ProjectDir)Controls\;$(ProjectDir)Dialogs\;$(ProjectDir)Pages\;$(ProjectDir)Views\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NDEBUG;WINVER=_WIN32_WINNT_WIN7;_WIN32_WINNT=_WIN32_WINNT_WIN7;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(ProjectDir);$(ProjectDir)Controls\;$(ProjectDir)Dialogs\;$(ProjectDir)Pages\;$(ProjectDir)Views\;$(ProjectDir)Res\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;WINVER=_WIN32_WINNT_WIN7;_WIN32_WINNT=_WIN32_WINNT_WIN7;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -320,6 +318,8 @@
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <FloatingPointModel>Fast</FloatingPointModel>
       <BufferSecurityCheck>false</BufferSecurityCheck>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <DisableSpecificWarnings>4324</DisableSpecificWarnings>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;WINVER=0x0601;_WIN32_WINNT=0x0601;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -334,9 +334,10 @@
       <AdditionalDependencies>delayimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName).exe</OutputFile>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalOptions>/pdbaltpath:%_PDB% /release %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/pdbaltpath:%_PDB% /release /OPT:ICF=8 %(AdditionalOptions)</AdditionalOptions>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <Profile>false</Profile>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <Manifest>
       <AdditionalManifestFiles>res\windirstat.manifest</AdditionalManifestFiles>
@@ -350,66 +351,12 @@
       <Command>POWERSHELL.EXE -NoLogo -ExecutionPolicy Unrestricted -NoProfile -File "$(ProjectDir)Build\Compress Strings.ps1" -Path "$(ProjectDir)res"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
-    <ClCompile>
-      <AdditionalOptions>/utf-8 $(ExternalCompilerOptions)</AdditionalOptions>
-      <Optimization>Full</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(ProjectDir);$(ProjectDir)Controls\;$(ProjectDir)Dialogs\;$(ProjectDir)Pages\;$(ProjectDir)Views\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NDEBUG;WINVER=_WIN32_WINNT_WIN7;_WIN32_WINNT=_WIN32_WINNT_WIN7;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <MinimalRebuild>false</MinimalRebuild>
-      <StringPooling>true</StringPooling>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <WarningLevel>Level4</WarningLevel>
-      <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <LanguageStandard>stdcpp20</LanguageStandard>
-      <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <OmitFramePointers>true</OmitFramePointers>
-      <WholeProgramOptimization>true</WholeProgramOptimization>
-      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <FloatingPointModel>Fast</FloatingPointModel>
-      <BufferSecurityCheck>false</BufferSecurityCheck>
-    </ClCompile>
-    <ResourceCompile>
-      <PreprocessorDefinitions>NDEBUG;WINVER=0x0601;_WIN32_WINNT=0x0601;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..;.;Controls;Dialogs;..;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ResourceCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <FullProgramDatabaseFile>true</FullProgramDatabaseFile>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>delayimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)$(TargetName).exe</OutputFile>
-      <AdditionalOptions>/pdbaltpath:%_PDB% /release %(AdditionalOptions)</AdditionalOptions>
-      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
-      <Profile>false</Profile>
-    </Link>
-    <Manifest>
-      <AdditionalManifestFiles>res\windirstat.manifest</AdditionalManifestFiles>
-      <EnableDpiAwareness>false</EnableDpiAwareness>
-    </Manifest>
-    <CustomBuildStep>
-      <Command>
-      </Command>
-    </CustomBuildStep>
-    <PreBuildEvent>
-      <Command>POWERSHELL.EXE -NoLogo -ExecutionPolicy Unrestricted -NoProfile -File "$(ProjectDir)Build\Compress Strings.ps1" -Path "$(ProjectDir)res\*.txt"</Command>
-    </PreBuildEvent>
-  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalOptions>/utf-8 $(ExternalCompilerOptions)</AdditionalOptions>
+      <AdditionalOptions>/utf-8 /Gw $(ExternalCompilerOptions)</AdditionalOptions>
       <Optimization>Full</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(ProjectDir);$(ProjectDir)Controls\;$(ProjectDir)Dialogs\;$(ProjectDir)Pages\;$(ProjectDir)Views\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NDEBUG;WINVER=_WIN32_WINNT_WIN7;_WIN32_WINNT=_WIN32_WINNT_WIN7;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(ProjectDir);$(ProjectDir)Controls\;$(ProjectDir)Dialogs\;$(ProjectDir)Pages\;$(ProjectDir)Views\;$(ProjectDir)Res\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;WINVER=_WIN32_WINNT_WIN7;_WIN32_WINNT=_WIN32_WINNT_WIN7;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -431,6 +378,8 @@
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <FloatingPointModel>Fast</FloatingPointModel>
       <BufferSecurityCheck>false</BufferSecurityCheck>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <DisableSpecificWarnings>4324</DisableSpecificWarnings>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;WINVER=0x0601;_WIN32_WINNT=0x0601;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -445,9 +394,10 @@
       <AdditionalDependencies>delayimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName).exe</OutputFile>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalOptions>/pdbaltpath:%_PDB% /release %(AdditionalOptions)</AdditionalOptions>
-      <Profile>true</Profile>
+      <AdditionalOptions>/pdbaltpath:%_PDB% /release /OPT:ICF=8 %(AdditionalOptions)</AdditionalOptions>
+      <Profile>false</Profile>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <Manifest>
       <AdditionalManifestFiles>res\windirstat.manifest</AdditionalManifestFiles>
@@ -463,10 +413,10 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <ClCompile>
-      <AdditionalOptions>/utf-8 $(ExternalCompilerOptions)</AdditionalOptions>
+      <AdditionalOptions>/utf-8 /Gw $(ExternalCompilerOptions)</AdditionalOptions>
       <Optimization>Full</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(ProjectDir);$(ProjectDir)Controls\;$(ProjectDir)Dialogs\;$(ProjectDir)Pages\;$(ProjectDir)Views\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NDEBUG;WINVER=_WIN32_WINNT_WIN7;_WIN32_WINNT=_WIN32_WINNT_WIN7;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(ProjectDir);$(ProjectDir)Controls\;$(ProjectDir)Dialogs\;$(ProjectDir)Pages\;$(ProjectDir)Views\;$(ProjectDir)Res\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;WINVER=_WIN32_WINNT_WIN7;_WIN32_WINNT=_WIN32_WINNT_WIN7;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -488,6 +438,8 @@
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <FloatingPointModel>Fast</FloatingPointModel>
       <BufferSecurityCheck>false</BufferSecurityCheck>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <DisableSpecificWarnings>4324</DisableSpecificWarnings>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;WINVER=0x0601;_WIN32_WINNT=0x0601;_ALLOW_RTCc_IN_STL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -501,9 +453,10 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>delayimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName).exe</OutputFile>
-      <AdditionalOptions>/pdbaltpath:%_PDB% /release %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/pdbaltpath:%_PDB% /release /OPT:ICF=8 %(AdditionalOptions)</AdditionalOptions>
       <Profile>false</Profile>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <Manifest>
       <AdditionalManifestFiles>res\windirstat.manifest</AdditionalManifestFiles>
@@ -526,20 +479,27 @@
     <ClInclude Include="Controls\FileDupeControl.h" />
     <ClInclude Include="Controls\FileTopControl.h" />
     <ClInclude Include="Controls\FileTreeControl.h" />
+    <ClInclude Include="Controls\FileWatcherControl.h" />
     <ClInclude Include="Controls\IconHandler.h" />
-    <ClInclude Include="Controls\OwnerDrawnListControl.h" />
+    <ClInclude Include="Controls\WdsListControl.h" />
     <ClInclude Include="Controls\PacMan.h" />
-    <ClInclude Include="Controls\SortingListControl.h" />
+    <ClInclude Include="Controls\DrawTextCache.h" />
     <ClInclude Include="Controls\TreeListControl.h" />
     <ClInclude Include="Controls\TreeMap.h" />
     <ClInclude Include="Controls\XYSlider.h" />
     <ClInclude Include="Controls\FileSearchControl.h" />
-    <ClInclude Include="Views\FileSearchView.h" />
+    <ClInclude Include="DarkMode.h" />
+    <ClInclude Include="Dialogs\MessageBoxDlg.h" />
+    <ClInclude Include="Dialogs\ProgressDlg.h" />
+    <ClInclude Include="Filtering.h" />
+    <ClInclude Include="HelpersInterface.h" />
+    <ClInclude Include="HelpersTasks.h" />
+    <ClInclude Include="Pages\PagePrompts.h" />
+    <ClInclude Include="Views\ControlView.h" />
     <ClInclude Include="Finder.h" />
     <ClInclude Include="FinderNtfs.h" />
     <ClInclude Include="ItemSearch.h" />
     <ClInclude Include="ItemTop.h" />
-    <ClInclude Include="OleFilterOverride.h" />
     <ClInclude Include="Pages\PageFiltering.h" />
     <ClInclude Include="res\LangStrings.h" />
     <ClInclude Include="Dialogs\SearchDlg.h" />
@@ -551,13 +511,11 @@
     <ClInclude Include="CsvLoader.h" />
     <ClInclude Include="DirStatDoc.h" />
     <ClInclude Include="FinderBasic.h" />
-    <ClInclude Include="GlobalHelpers.h" />
     <ClInclude Include="Item.h" />
     <ClInclude Include="ItemDupe.h" />
     <ClInclude Include="Layout.h" />
     <ClInclude Include="Localization.h" />
     <ClInclude Include="MainFrame.h" />
-    <ClInclude Include="ModalApiShuttle.h" />
     <ClInclude Include="Options.h" />
     <ClInclude Include="Pages\PageAdvanced.h" />
     <ClInclude Include="Pages\PageCleanups.h" />
@@ -566,18 +524,14 @@
     <ClInclude Include="Pages\PageTreeMap.h" />
     <ClInclude Include="Property.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="langs.h" />
     <ClInclude Include="SelectObject.h" />
-    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="pch.h" />
     <ClInclude Include="Views\ExtensionView.h" />
-    <ClInclude Include="Views\FileDupeView.h" />
     <ClInclude Include="Views\FileTabbedView.h" />
-    <ClInclude Include="Views\FileTopView.h" />
     <ClInclude Include="Views\FileTreeView.h" />
     <ClInclude Include="Views\TreeMapView.h" />
     <ClInclude Include="WinDirStat.h" />
     <ClInclude Include="Dialogs\AboutDlg.h" />
-    <ClInclude Include="Dialogs\DeleteWarningDlg.h" />
     <ClInclude Include="Dialogs\SelectDrivesDlg.h" />
   </ItemGroup>
   <ItemGroup>
@@ -585,21 +539,29 @@
     <ClCompile Include="Controls\FileDupeControl.cpp" />
     <ClCompile Include="Controls\FileTopControl.cpp" />
     <ClCompile Include="Controls\FileTreeControl.cpp" />
-    <ClCompile Include="Controls\OwnerDrawnListControl.cpp" />
+    <ClCompile Include="Controls\FileWatcherControl.cpp" />
+    <ClCompile Include="Controls\WdsListControl.cpp" />
     <ClCompile Include="Controls\PacMan.cpp" />
-    <ClCompile Include="Controls\SortingListControl.cpp" />
+    <ClCompile Include="Controls\DrawTextCache.cpp" />
     <ClCompile Include="Controls\TreeListControl.cpp" />
     <ClCompile Include="Controls\TreeMap.cpp" />
     <ClCompile Include="Controls\XYSlider.cpp" />
     <ClCompile Include="CsvLoader.cpp" />
+    <ClCompile Include="DarkMode.cpp" />
+    <ClCompile Include="Dialogs\MessageBoxDlg.cpp" />
+    <ClCompile Include="Dialogs\ProgressDlg.cpp" />
     <ClCompile Include="DirStatDoc.cpp">
     </ClCompile>
-    <ClCompile Include="Views\FileSearchView.cpp" />
+    <ClCompile Include="Filtering.cpp" />
+    <ClCompile Include="Item.Extended.cpp" />
+    <ClCompile Include="Pages\PagePrompts.cpp" />
+    <ClCompile Include="Views\ControlView.cpp" />
     <ClCompile Include="Controls\FileSearchControl.cpp" />
     <ClCompile Include="FinderBasic.cpp" />
     <ClCompile Include="FinderNtfs.cpp" />
-    <ClCompile Include="GlobalHelpers.cpp">
+    <ClCompile Include="HelpersTasks.cpp">
     </ClCompile>
+    <ClCompile Include="HelpersInterface.cpp" />
     <ClCompile Include="Item.cpp">
     </ClCompile>
     <ClCompile Include="ItemDupe.cpp" />
@@ -609,8 +571,6 @@
     </ClCompile>
     <ClCompile Include="Localization.cpp" />
     <ClCompile Include="MainFrame.cpp">
-    </ClCompile>
-    <ClCompile Include="ModalApiShuttle.cpp">
     </ClCompile>
     <ClCompile Include="Options.cpp">
     </ClCompile>
@@ -626,7 +586,7 @@
     </ClCompile>
     <ClCompile Include="Property.cpp" />
     <ClCompile Include="Dialogs\SearchDlg.cpp" />
-    <ClCompile Include="stdafx.cpp">
+    <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -635,9 +595,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Views\ExtensionView.cpp" />
-    <ClCompile Include="Views\FileDupeView.cpp" />
     <ClCompile Include="Views\FileTabbedView.cpp" />
-    <ClCompile Include="Views\FileTopView.cpp" />
     <ClCompile Include="Views\FileTreeView.cpp" />
     <ClCompile Include="Views\TreeMapView.cpp" />
     <ClCompile Include="WinDirStat.cpp">
@@ -648,88 +606,46 @@
     </ClCompile>
     <ClCompile Include="Dialogs\AboutDlg.cpp">
     </ClCompile>
-    <ClCompile Include="Dialogs\DeleteWarningDlg.cpp">
-    </ClCompile>
     <ClCompile Include="Dialogs\SelectDrivesDlg.cpp">
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="res\IDB_NODES.bmp" />
-    <None Include="res\langs\lang_cs.bin" />
-    <None Include="res\langs\lang_de.bin" />
-    <None Include="res\langs\lang_et.bin" />
-    <None Include="res\langs\lang_en.bin" />
-    <None Include="res\langs\lang_es.bin" />
-    <None Include="res\langs\lang_fi.bin" />
-    <None Include="res\langs\lang_fr.bin" />
-    <None Include="res\langs\lang_hk.bin" />
-    <None Include="res\langs\lang_hu.bin" />
-    <None Include="res\langs\lang_it.bin" />
-    <None Include="res\langs\lang_ja.bin" />
-    <None Include="res\langs\lang_ko.bin" />
-    <None Include="res\langs\lang_nl.bin" />
-    <None Include="res\langs\lang_no.bin" />
-    <None Include="res\langs\lang_pl.bin" />
-    <None Include="res\langs\lang_pt.bin" />
-    <None Include="res\langs\lang_ru.bin" />
-    <None Include="res\langs\lang_sv.bin" />
-    <None Include="res\langs\lang_zh.bin" />
+    <None Include="res\lang_combined.bin" />
     <None Include="res\license.bin" />
     <None Include="res\license.txt" />
-    <None Include="res\IDR_MAINFRAME.bmp" />
     <None Include="res\windirstat.manifest" />
     <None Include="res\windirstat.rc2" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="langs.rc" />
     <ResourceCompile Include="windirstat.rc" />
     <ResourceCompile Include="version.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="res\toolbar\IDB_FILTER.bmp" />
-    <Image Include="res\toolbar\IDB_SEARCH.bmp" />
     <Image Include="res\WinDirStat.ico" />
-    <Image Include="res\nodes\IDI_EMPTY.ico" />
-    <Image Include="res\nodes\IDI_FREE_SPACE.ico" />
-    <Image Include="res\nodes\IDI_JUNCTION.ico" />
-    <Image Include="res\nodes\IDI_JUNCTION_PROTECTED.ico" />
-    <Image Include="res\nodes\IDI_UNKNOWN.ico" />
-    <Image Include="res\toolbar\IDB_CLEANUP_DELETE.bmp" />
-    <Image Include="res\toolbar\IDB_CLEANUP_DELETE_BIN.bmp" />
-    <Image Include="res\toolbar\IDB_CLEANUP_EXPLORER_SELECT.bmp" />
-    <Image Include="res\toolbar\IDB_CLEANUP_OPEN_IN_CONSOLE.bmp" />
-    <Image Include="res\toolbar\IDB_CLEANUP_OPEN_SELECTED.bmp" />
-    <Image Include="res\toolbar\IDB_CLEANUP_PROPERTIES.bmp" />
-    <Image Include="res\toolbar\IDB_EDIT_COPY_CLIPBOARD.bmp" />
-    <Image Include="res\toolbar\IDB_FILE_SELECT.bmp" />
-    <Image Include="res\toolbar\IDB_HELP_MANUAL.bmp" />
-    <Image Include="res\toolbar\IDB_REFRESH_ALL.bmp" />
-    <Image Include="res\toolbar\IDB_REFRESH_SELECTED.bmp" />
-    <Image Include="res\toolbar\IDB_SCAN_RESUME.bmp" />
-    <Image Include="res\toolbar\IDB_SCAN_STOP.bmp" />
-    <Image Include="res\toolbar\IDB_SCAN_SUSPEND.bmp" />
-    <Image Include="res\toolbar\IDB_TREEMAP_ZOOMIN.bmp" />
-    <Image Include="res\toolbar\IDB_TREEMAP_ZOOMOUT.bmp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="res\langs\lang_cs.txt" />
+    <Text Include="res\langs\lang_da.txt" />
     <Text Include="res\langs\lang_de.txt" />
-    <Text Include="res\langs\lang_et.txt" />
     <Text Include="res\langs\lang_en.txt" />
     <Text Include="res\langs\lang_es.txt" />
+    <Text Include="res\langs\lang_et.txt" />
     <Text Include="res\langs\lang_fi.txt" />
     <Text Include="res\langs\lang_fr.txt" />
-    <Text Include="res\langs\lang_hk.txt" />
     <Text Include="res\langs\lang_hu.txt" />
     <Text Include="res\langs\lang_it.txt" />
     <Text Include="res\langs\lang_ja.txt" />
     <Text Include="res\langs\lang_ko.txt" />
+    <Text Include="res\langs\lang_nb.txt" />
     <Text Include="res\langs\lang_nl.txt" />
-    <Text Include="res\langs\lang_no.txt" />
     <Text Include="res\langs\lang_pl.txt" />
     <Text Include="res\langs\lang_pt.txt" />
     <Text Include="res\langs\lang_ru.txt" />
+    <Text Include="res\langs\lang_sl.txt" />
     <Text Include="res\langs\lang_sv.txt" />
+    <Text Include="res\langs\lang_tr.txt" />
+    <Text Include="res\langs\lang_uk.txt" />
+    <Text Include="res\langs\lang_zh-HK.txt" />
     <Text Include="res\langs\lang_zh.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -1,52 +1,38 @@
 ﻿// WinDirStat - Directory Statistics
 // Copyright © WinDirStat Team
 //
-// This program is free software; you can redistribute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
+// the Free Software Foundation, either version 2 of the License, or
+// at your option any later version.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-#include "stdafx.h"
-#include "DirStatDoc.h"
+#include "pch.h"
 #include "ItemSearch.h"
-#include "MainFrame.h"
-#include "FileSearchControl.h"
-#include "Localization.h"
+#include "FileTreeView.h"
 
-#include <ranges>
-
-CFileSearchControl::CFileSearchControl() : CTreeListControl(20, COptions::SearchViewColumnOrder.Ptr(), COptions::SearchViewColumnWidths.Ptr())
+CFileSearchControl::CFileSearchControl() : CTreeListControl(COptions::SearchViewColumnOrder.Ptr(), COptions::SearchViewColumnWidths.Ptr(), LF_SEARCHLIST, false)
 {
-    m_Singleton = this;
+    m_singleton = this;
 }
 
 bool CFileSearchControl::GetAscendingDefault(const int column)
 {
-    return column == COL_ITEMSEARCH_SIZE_PHYSICAL ||
-        column == COL_ITEMSEARCH_SIZE_LOGICAL ||
-        column == COL_ITEMSEARCH_LASTCHANGE;
+    return column == COL_ITEMSEARCH_NAME || column == COL_ITEMSEARCH_LAST_CHANGE;
 }
 
-#pragma warning(push)
-#pragma warning(disable:26454)
 BEGIN_MESSAGE_MAP(CFileSearchControl, CTreeListControl)
-    ON_WM_SETFOCUS()
-    ON_WM_KEYDOWN()
-    ON_NOTIFY_REFLECT_EX(LVN_DELETEALLITEMS, OnDeleteAllItems)
 END_MESSAGE_MAP()
-#pragma warning(pop)
 
-CFileSearchControl* CFileSearchControl::m_Singleton = nullptr;
+CFileSearchControl* CFileSearchControl::m_singleton = nullptr;
 
 std::wregex CFileSearchControl::ComputeSearchRegex(const std::wstring & searchTerm, const bool searchCase, const bool useRegex)
 {
@@ -57,7 +43,7 @@ std::wregex CFileSearchControl::ComputeSearchRegex(const std::wstring & searchTe
 
         // Decode regex flags based on settings
         auto searchFlags = std::regex_constants::optimize;
-        if (searchCase) searchFlags |= std::regex_constants::icase;
+        if (!searchCase) searchFlags |= std::regex_constants::icase;
 
         // Precompile regex string
         return std::wregex(useRegex ?
@@ -69,98 +55,107 @@ std::wregex CFileSearchControl::ComputeSearchRegex(const std::wstring & searchTe
     }
 }
 
-void CFileSearchControl::ProcessSearch(CItem* item)
+void CFileSearchControl::ProcessSearch(CItem* item,
+    const std::wstring & searchTerm, const bool searchCase,
+    const bool searchWholePhrase, const bool searchRegex, const bool onlyFiles)
 {
-    // Remove previous results
-    SetRedraw(FALSE);
-    CDirStatDoc::GetDocument()->GetRootItemSearch()->RemoveSearchItemResults();
-    m_ItemTracker.clear();
-    SetRedraw(TRUE);
+    // Update tab visibility to show search tab if results exist
+    CMainFrame::Get()->GetFileTabbedView()->SetSearchTabVisibility(true);
 
-    // Precompile regex string
-    const auto searchRegex = ComputeSearchRegex(COptions::SearchTerm,
-        COptions::SearchCase, COptions::SearchRegex);
-
-    // Determine which search function
-    const std::function searchFunc = COptions::SearchWholePhrase ?
-        [](const std::wstring& str, const std::wregex& regex) { return std::regex_match(str, regex); } :
-        [](const std::wstring& str, const std::wregex& regex) { return std::regex_search(str, regex); };
-
-    // Do search
-    CWaitCursor waitCursor;
-    SetRedraw(FALSE);
-    std::stack<CItem*> queue({ item });
-    while (!queue.empty())
+    // Process search request using progress dialog
+    std::vector<CItem*> matchedItems;
+    CProgressDlg(static_cast<size_t>(item->GetItemsCount()), false, AfxGetMainWnd(),
+        [&](CProgressDlg* pdlg)
     {
-        // Grab item from queue
-        CItem* qitem = queue.top();
-        queue.pop();
+        // Remove previous results
+        SetRootItem();
+        m_rootItem->SetLimitExceeded(false);
 
-        if (searchFunc(qitem->GetName(), searchRegex))
+        // Precompile regex string
+        const auto searchTermRegex = ComputeSearchRegex(searchTerm,
+            searchCase, searchRegex);
+
+        // Determine which search function
+        const std::function searchFunc = searchWholePhrase ?
+            [](const std::wstring& str, const std::wregex& regex) { return std::regex_match(str, regex); } :
+            [](const std::wstring& str, const std::wregex& regex) { return std::regex_search(str, regex); };
+  
+        // Do search
+        std::vector queue({ item });
+        while (!queue.empty() && !pdlg->IsCancelled())
         {
-            CItemSearch* searchItem = new CItemSearch(qitem);
-            CDirStatDoc::GetDocument()->GetRootItemSearch()->AddSearchItemChild(searchItem);
-            m_ItemTracker.emplace(qitem, searchItem);
+            // Grab item from queue
+            pdlg->Increment();
+            CItem* qitem = queue.back();
+            queue.pop_back();
+
+            // Check for match
+            if ((!onlyFiles || qitem->IsTypeOrFlag(IT_FILE)) &&
+                searchFunc(std::wstring(qitem->GetNameView()), searchTermRegex))
+            {
+                matchedItems.push_back(qitem);
+            }
+
+            // Descend into child items
+            if (qitem->IsLeaf() || qitem->IsTypeOrFlag(IT_HLINKS)) continue;
+            for (const auto& child : qitem->GetChildren())
+            {
+                queue.push_back(child);
+            }
         }
 
-        // Descend into childitems
-        if (qitem->IsLeaf()) continue;
-        for (const auto& child : qitem->GetChildren())
+        // Sort by physical size (largest first) and take top N results
+        const size_t maxResults = COptions::SearchMaxResults;
+        if (matchedItems.size() > maxResults)
         {
-            queue.push(child);
+            // Partial sort to get the top N items by physical size
+            std::ranges::partial_sort(matchedItems, matchedItems.begin() + maxResults,
+                std::ranges::greater{}, &CItem::GetSizeLogical);
+            
+            // Keep only the top N results
+            matchedItems.resize(maxResults);
+            m_rootItem->SetLimitExceeded(true);
         }
+    }).DoModal();
+
+    // Add found items to the interface
+    CWaitCursor wait;
+    CollapseItem(0);
+
+    // Add to found items
+    const CSetRedrawLock lock(this);
+    m_itemTracker.reserve(matchedItems.size());
+    for (CItem* matchedItem : matchedItems)
+    {
+        auto searchItem = new CItemSearch(matchedItem);
+        m_itemTracker.emplace(matchedItem, searchItem);
+        m_rootItem->AddSearchItemChild(searchItem);
     }
 
-    // Reenable drawing
-    SetRedraw(TRUE);
     SortItems();
+    ExpandItem(0);
 }
 
 void CFileSearchControl::RemoveItem(CItem* item)
 {
-    const auto& findItem = m_ItemTracker.find(item);
-    if (findItem == m_ItemTracker.end()) return;
-
-    // Remove the item from the interface
-    CDirStatDoc::GetDocument()->GetRootItemSearch()->RemoveSearchItemChild(findItem->second);
-    m_ItemTracker.erase(findItem);
-}
-
-void CFileSearchControl::OnItemDoubleClick(const int i)
-{
-    if (const auto item = reinterpret_cast<const CItem*>(GetItem(i)->GetLinkedItem());
-        item != nullptr && item->IsType(IT_FILE))
+    const CSetRedrawLock lock(this);
+    std::erase_if(m_itemTracker, [&](const auto& pair)
     {
-        CDirStatDoc::OpenItem(item);
-    }
-    else
-    {
-        CTreeListControl::OnItemDoubleClick(i);
-    }
+        if (pair.first != item && !item->IsAncestorOf(pair.first)) return false;
+        m_rootItem->RemoveSearchItemChild(pair.second);
+        return true;
+    });
 }
 
-BOOL CFileSearchControl::OnDeleteAllItems(NMHDR*, LRESULT* pResult)
+void CFileSearchControl::AfterDeleteAllItems()
 {
-    // Allow delete to proceed
-    *pResult = FALSE;
-    return FALSE;
+    // Delete previous search results
+    m_itemTracker.clear();
+
+    // Delete and recreate root item
+    delete m_rootItem;
+    m_rootItem = new CItemSearch();
+    InsertItem(0, m_rootItem);
+    m_rootItem->SetExpanded(true);
 }
 
-void CFileSearchControl::OnSetFocus(CWnd* pOldWnd)
-{
-    CTreeListControl::OnSetFocus(pOldWnd);
-    CMainFrame::Get()->SetLogicalFocus(LF_SEARCHLIST);
-}
-
-void CFileSearchControl::OnKeyDown(const UINT nChar, const UINT nRepCnt, const UINT nFlags)
-{
-    if (nChar == VK_TAB)
-    {
-        CMainFrame::Get()->MoveFocus(LF_EXTLIST);
-    }
-    else if (nChar == VK_ESCAPE)
-    {
-        CMainFrame::Get()->MoveFocus(LF_NONE);
-    }
-    CTreeListControl::OnKeyDown(nChar, nRepCnt, nFlags);
-}

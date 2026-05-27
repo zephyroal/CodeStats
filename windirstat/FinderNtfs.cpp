@@ -1,25 +1,23 @@
 ﻿// WinDirStat - Directory Statistics
 // Copyright © WinDirStat Team
 //
-// This program is free software; you can redistribute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
+// the Free Software Foundation, either version 2 of the License, or
+// at your option any later version.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-#include <stdafx.h>
+#include "pch.h"
 #include "FinderNtfs.h"
-#include "SmartPointer.h"
-#include "GlobalHelpers.h"
+#include "HelpersTasks.h"
 
 #include <vector>
 #include <execution>
@@ -52,21 +50,21 @@ using FILE_RECORD = struct FILE_RECORD
     USHORT SegmentNumberHighPart;
     ULONG SegmentNumberLowPart;
 
-    constexpr ULONGLONG SegmentNumber() const
+    constexpr ULONGLONG SegmentNumber() const noexcept
     {
         return static_cast<ULONGLONG>(SegmentNumberHighPart) << 32ul | SegmentNumberLowPart;
     }
 
-    constexpr bool IsValid() const
+    constexpr bool IsValid() const noexcept
     {
         return Signature == 0x454C4946; // 'FILE'
     }
-    constexpr bool IsInUse() const
+    constexpr bool IsInUse() const noexcept
     {
         return Flags & 0x0001;
     }
 
-    constexpr bool IsDirectory() const
+    constexpr bool IsDirectory() const noexcept
     {
         return Flags & 0x0002;
     }
@@ -95,32 +93,37 @@ using ATTRIBUTE_RECORD = struct ATTRIBUTE_RECORD
         {
             LONGLONG LowestVcn;
             LONGLONG HighestVcn;
-            USHORT MappingPairsOffset;
+            USHORT DataRunOffset;
             USHORT CompressionSize;
             UCHAR Padding[4];
-            LONGLONG AllocatedLength;
-            LONGLONG FileSize;
-            LONGLONG ValidDataLength;
-            LONGLONG Compressed;
+            ULONGLONG AllocatedLength;
+            ULONGLONG FileSize;
+            ULONGLONG ValidDataLength;
+            ULONGLONG Compressed;
         } Nonresident;
     } Form;
 
-    constexpr bool IsNonResident() const
+    constexpr bool IsNonResident() const noexcept
     {
         return FormCode & 0x0001;
     }
 
-    constexpr bool IsCompressed() const
+    constexpr bool IsCompressed() const noexcept
     {
         return Flags & 0x0001;
     }
 
-    ATTRIBUTE_RECORD* next() const
+    constexpr bool IsSparse() const noexcept
+    {
+        return Flags & 0x8000;
+    }
+
+    ATTRIBUTE_RECORD* next() const noexcept
     {
         return ByteOffset<ATTRIBUTE_RECORD>(const_cast<ATTRIBUTE_RECORD*>(this), RecordLength);
     }
 
-    static constexpr std::pair<ATTRIBUTE_RECORD*, ATTRIBUTE_RECORD*> bounds(FILE_RECORD* FileRecord, auto TotalLength)
+    static constexpr std::pair<ATTRIBUTE_RECORD*, ATTRIBUTE_RECORD*> bounds(FILE_RECORD* FileRecord, auto TotalLength) noexcept
     {
         return {
             ByteOffset<ATTRIBUTE_RECORD>(FileRecord, FileRecord->FirstAttributeOffset),
@@ -146,7 +149,7 @@ using FILE_NAME = struct FILE_NAME
     UCHAR Flags;
     WCHAR FileName[1];
 
-    constexpr bool IsShortNameRecord() const
+    constexpr bool IsShortNameRecord() const noexcept
     {
         return Flags == 0x02;
     }
@@ -161,26 +164,15 @@ using STANDARD_INFORMATION = struct STANDARD_INFORMATION
     ULONG FileAttributes;
 };
 
-constexpr auto NtfsNodeRoot = 5;
-constexpr auto NtfsReservedMax = 16;
-
-static constexpr auto& getMapBinRef(auto* mapArray, std::mutex* mutexArray, auto key, auto binSize, auto binMax)
-{
-    const auto binIndex = (key / binSize) % binMax;
-    std::lock_guard<std::mutex> lock(mutexArray[binIndex]);
-    return mapArray[binIndex][key];
-}
-
 bool FinderNtfsContext::LoadRoot(CItem* driveitem)
 {
     // Trim off excess characters
     std::wstring volumePath = driveitem->GetPathLong();
-    if (volumePath.back() == L'\\') volumePath.pop_back();
     while (!volumePath.empty() && volumePath.back() == L'\\') volumePath.pop_back();
     if (!volumePath.empty() && volumePath[0] != L'\\' && volumePath[0] != L'/') volumePath.insert(0, L"\\\\.\\");
 
-    // Open volume handle without FILE_FLAG_OVERLAPPED for synchronous I/O
-    SmartPointer<HANDLE> volumeHandle(CloseHandle,CreateFile(volumePath.c_str(), FILE_READ_DATA | FILE_READ_ATTRIBUTES | SYNCHRONIZE,
+    // Open volume handle with FILE_FLAG_OVERLAPPED for asynchronous I/O
+    SmartPointer volumeHandle(CloseHandle, CreateFile(volumePath.c_str(), FILE_READ_DATA | FILE_READ_ATTRIBUTES | SYNCHRONIZE,
         FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING,
         FILE_FLAG_NO_BUFFERING | FILE_FLAG_OVERLAPPED, nullptr));
     if (volumeHandle == INVALID_HANDLE_VALUE) return false;
@@ -192,10 +184,10 @@ bool FinderNtfsContext::LoadRoot(CItem* driveitem)
         false;
 
     // Get MFT retrieval pointers
-    SmartPointer<HANDLE> fileHandle(CloseHandle, CreateFile((volumePath + L"\\$MFT::$DATA").c_str(), FILE_READ_ATTRIBUTES | SYNCHRONIZE,
+    SmartPointer fileHandle(CloseHandle, CreateFile((volumePath + L"\\$MFT::$DATA").c_str(), FILE_READ_ATTRIBUTES | SYNCHRONIZE,
         FILE_SHARE_WRITE | FILE_SHARE_READ | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING,
         FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_NO_BUFFERING, nullptr));
-    if (fileHandle == INVALID_HANDLE_VALUE) return {};
+    if (fileHandle == INVALID_HANDLE_VALUE) return false;
 
     std::vector<BYTE> dataRunsBuffer(sizeof(RETRIEVAL_POINTERS_BUFFER) + 32 * sizeof(LARGE_INTEGER));
     STARTING_VCN_INPUT_BUFFER input = {};
@@ -212,35 +204,26 @@ bool FinderNtfsContext::LoadRoot(CItem* driveitem)
     // Extract data run origins and cluster counts
     RETRIEVAL_POINTERS_BUFFER* retrievalBuffer = ByteOffset<RETRIEVAL_POINTERS_BUFFER>(dataRunsBuffer.data(), 0);
     std::vector<std::pair<ULONGLONG, ULONGLONG>> dataRuns(retrievalBuffer->ExtentCount, {});
-    for (DWORD i = 0; i < retrievalBuffer->ExtentCount; i++)
+    for (const auto i : std::views::iota(0u, retrievalBuffer->ExtentCount))
     {
         dataRuns[i] = { retrievalBuffer->Extents[i].Lcn.QuadPart,
             retrievalBuffer->Extents[i].NextVcn.QuadPart - (i == 0
                 ? retrievalBuffer->StartingVcn.QuadPart : retrievalBuffer->Extents[i - 1].NextVcn.QuadPart) };
     }
 
-    // This is a binning approach to reduce contention on the maps
-    constexpr auto numBins = 256;
-    const auto numRecords = volumeInfo.MftValidDataLength.QuadPart / volumeInfo.BytesPerFileRecordSegment;
-    const auto binSize = max(1, numRecords / numBins);
-    std::unordered_map<ULONGLONG, FileRecordBase> baseFileRecordMapTemp[numBins];
-    std::unordered_map<ULONGLONG, ULONGLONG> nonBaseToBaseMapTemp[numBins];
-    std::unordered_map<ULONGLONG, std::set<FileRecordName>> parentToChildMapTemp[numBins];
-    std::mutex baseFileRecordMapMutex[numBins];
-    std::mutex nonBaseToBaseMapMutex[numBins];
-    std::mutex parentToChildMapMutex[numBins];
-
     // Process MFT records
-    std::for_each(std::execution::par_unseq, dataRuns.begin(), dataRuns.end(), [&](const auto& dataRun)
+    std::for_each(std::execution::par, dataRuns.begin(), dataRuns.end(), [&](const auto& dataRun)
     {
-        constexpr size_t bufferSize = 4ull * 1024 * 1024;
-        std::vector<UCHAR> buffer;
-        buffer.reserve(bufferSize);
+        constexpr size_t bufferSize = 4ull * wds::Mi;
+        thread_local std::unique_ptr<UCHAR, decltype(&_aligned_free)> buffer(
+            static_cast<UCHAR*>(_aligned_malloc(bufferSize, volumeInfo.BytesPerSector)), &_aligned_free);
+
         const auto& [clusterStart, clusterCount] = dataRun;
 
         // Enumerate over the data run in buffer-sized chunks
         ULONGLONG bytesToRead = clusterCount * volumeInfo.BytesPerCluster;
         LARGE_INTEGER fileOffset{ .QuadPart = static_cast<LONGLONG>(clusterStart * volumeInfo.BytesPerCluster) };
+        thread_local SmartPointer event(CloseHandle, CreateEvent(nullptr, FALSE, FALSE, nullptr));
         for (ULONG bytesRead = 0; bytesToRead > 0; bytesToRead -= bytesRead, fileOffset.QuadPart += bytesRead)
         {
             // Animate pacman
@@ -248,36 +231,54 @@ bool FinderNtfsContext::LoadRoot(CItem* driveitem)
 
             // Set file pointer for synchronous read
             const ULONG bytesThisRead = static_cast<ULONG>(min(bytesToRead, bufferSize));
-            SmartPointer<HANDLE> event(CloseHandle, CreateEvent(nullptr, TRUE, FALSE, nullptr));
-            OVERLAPPED overlapped = { .Offset = fileOffset.LowPart, .OffsetHigh = static_cast<DWORD>(fileOffset.HighPart), . hEvent = event };
-            if (ReadFile(volumeHandle, buffer.data(), bytesThisRead, &bytesRead, &overlapped) == 0 && GetLastError() != ERROR_IO_PENDING ||
-                WaitForSingleObject(event, INFINITE) != WAIT_OBJECT_0 ||
-                GetOverlappedResult(volumeHandle, &overlapped, &bytesRead, TRUE) == 0)
+            OVERLAPPED overlapped = { .Offset = fileOffset.LowPart, .OffsetHigh = static_cast<DWORD>(fileOffset.HighPart), .hEvent = event };
+            if (ReadFile(volumeHandle, buffer.get(), bytesThisRead, &bytesRead, &overlapped) == 0)
             {
-                break;
+                if (GetLastError() != ERROR_IO_PENDING ||
+                    WaitForSingleObject(event, INFINITE) != WAIT_OBJECT_0 ||
+                    GetOverlappedResult(volumeHandle, &overlapped, &bytesRead, FALSE) == 0)
+                {
+                    VTRACE(L"ERROR: Failed to read MFT data.");
+                    break;
+                }
             }
 
             for (ULONG offset = 0; offset + volumeInfo.BytesPerFileRecordSegment <= bytesRead; offset += volumeInfo.BytesPerFileRecordSegment)
             {
                 // Process MFT record inline
-                const auto fileRecord = ByteOffset<FILE_RECORD>(buffer.data(), offset);
+                const auto fileRecord = ByteOffset<FILE_RECORD>(buffer.get(), offset);
 
-                // Apply fixup
-                const auto wordsPerSector = volumeInfo.BytesPerSector / sizeof(USHORT);
+                // Bounds check for fixup array access
+                if (fileRecord->UsaOffset + sizeof(USHORT) * fileRecord->UsaCount > volumeInfo.BytesPerFileRecordSegment) continue;
+                if (fileRecord->FirstAttributeOffset >= volumeInfo.BytesPerFileRecordSegment) continue;
+
+                // Apply fixup (NTFS MFTs always have a 512 byte sector size)
+                constexpr auto MFT_RECORD_SECTOR_SIZE = 512u;
+                constexpr auto wordsPerSector = MFT_RECORD_SECTOR_SIZE / sizeof(USHORT);
                 const auto fixupArray = ByteOffset<USHORT>(fileRecord, fileRecord->UsaOffset);
                 const auto usn = fixupArray[0];
-                const auto recordWords = reinterpret_cast<PUSHORT>(ByteOffset<UCHAR>(buffer.data(), offset));
-                for (ULONG i = 1; i < fileRecord->UsaCount; ++i)
+                const auto recordWords = reinterpret_cast<PUSHORT>(ByteOffset<UCHAR>(buffer.get(), offset));
+                bool skipRecord = false;
+                if (fileRecord->UsaCount > 0) for (const auto i : std::views::iota(1u, fileRecord->UsaCount))
                 {
                     const auto sectorEnd = recordWords + i * wordsPerSector - 1;
                     if (*sectorEnd == usn) *sectorEnd = fixupArray[i];
+                    else { skipRecord = true; break; }
                 }
+
+                // Skip if corrupt record detected
+                if (skipRecord) [[unlikely]] break;
 
                 // Only process records with valid headers and are in use
                 if (!fileRecord->IsValid() || !fileRecord->IsInUse()) continue;
                 const auto currentRecord = fileRecord->SegmentNumber();
-                auto baseRecordIndex = fileRecord->BaseFileRecordNumber > 0 ? fileRecord->BaseFileRecordNumber : currentRecord;
-                getMapBinRef(nonBaseToBaseMapTemp, nonBaseToBaseMapMutex, currentRecord, binSize, numBins) = baseRecordIndex;
+                const auto baseRecordIndex = fileRecord->BaseFileRecordNumber > 0 ? fileRecord->BaseFileRecordNumber : currentRecord;
+                FileRecordBase* baseRecordPtr = nullptr;
+                if (std::scoped_lock lock(m_baseFileRecordMutex); true)
+                {
+                    baseRecordPtr = &m_baseFileRecordMap[baseRecordIndex];
+                }
+                auto& baseRecord = *baseRecordPtr;
 
                 for (auto [curAttribute, endAttribute] = ATTRIBUTE_RECORD::bounds(fileRecord, volumeInfo.BytesPerFileRecordSegment); curAttribute <
                     endAttribute && curAttribute->TypeCode != AttributeEnd; curAttribute = curAttribute->next())
@@ -286,7 +287,6 @@ bool FinderNtfsContext::LoadRoot(CItem* driveitem)
                     {
                         if (curAttribute->IsNonResident()) continue;
                         const auto si = ByteOffset<STANDARD_INFORMATION>(curAttribute, curAttribute->Form.Resident.ValueOffset);
-                        auto& baseRecord = getMapBinRef(baseFileRecordMapTemp, baseFileRecordMapMutex, baseRecordIndex, binSize, numBins);
                         baseRecord.LastModifiedTime = si->LastModificationTime;
                         baseRecord.Attributes = si->FileAttributes;
                         if (fileRecord->IsDirectory()) baseRecord.Attributes |= FILE_ATTRIBUTE_DIRECTORY;
@@ -296,20 +296,41 @@ bool FinderNtfsContext::LoadRoot(CItem* driveitem)
                     {
                         if (curAttribute->IsNonResident()) continue;
                         const auto fn = ByteOffset<FILE_NAME>(curAttribute, curAttribute->Form.Resident.ValueOffset);
-                        if (fn->IsShortNameRecord()) continue;
-                        auto& parentToChildEntry = getMapBinRef(parentToChildMapTemp, parentToChildMapMutex, fn->ParentDirectory, binSize, numBins);
-                        parentToChildEntry.emplace(std::wstring{ fn->FileName, fn->FileNameLength }, baseRecordIndex);
+                        if (fn->IsShortNameRecord() ||
+                            (fn->FileNameLength == 1 && wcscmp(fn->FileName, L".") == 0) ||
+                            (fn->FileNameLength == 2 && wcscmp(fn->FileName, L"..") == 0)) continue;
+                        
+                        std::scoped_lock lock(m_parentToChildMutex);
+                        auto& children = m_parentToChildMap.try_emplace(fn->ParentDirectory).first->second;
+                        children.emplace_back(std::wstring{ fn->FileName, fn->FileNameLength }, baseRecordIndex);
                     }
                     else if (curAttribute->TypeCode == AttributeData)
                     {
-                        if (curAttribute->NameLength != 0) continue; // only process default data stream
-                        auto& baseRecord = getMapBinRef(baseFileRecordMapTemp, baseFileRecordMapMutex, baseRecordIndex, binSize, numBins);
+                        // Special case for WofCompressedData files
+                        if (const WCHAR* streamName = ByteOffset<WCHAR>(curAttribute, curAttribute->NameOffset); curAttribute->NameLength > 0)
+                        {
+                            if (std::wstring_view(streamName, curAttribute->NameLength) == L"WofCompressedData" &&
+                                (!curAttribute->IsNonResident() || curAttribute->Form.Nonresident.LowestVcn == 0))
+                            {
+                                baseRecord.PhysicalSize = curAttribute->IsNonResident() ?
+                                    curAttribute->Form.Nonresident.AllocatedLength :
+                                    (curAttribute->Form.Resident.ValueLength + 7) & ~7;
+                            }
+
+                            continue;
+                        }
+
+                        // Default stream processing
                         if (curAttribute->IsNonResident())
                         {
                             if (curAttribute->Form.Nonresident.LowestVcn != 0) continue;
                             baseRecord.LogicalSize = curAttribute->Form.Nonresident.FileSize;
-                            baseRecord.PhysicalSize = curAttribute->IsCompressed() ?
-                                curAttribute->Form.Nonresident.Compressed : curAttribute->Form.Nonresident.AllocatedLength;
+
+                            if (const ULONGLONG physSize = (curAttribute->IsCompressed() || curAttribute->IsSparse()) ?
+                                curAttribute->Form.Nonresident.Compressed : curAttribute->Form.Nonresident.AllocatedLength; physSize > 0)
+                            {
+                                baseRecord.PhysicalSize = physSize;
+                            }
                         }
                         else
                         {
@@ -321,8 +342,14 @@ bool FinderNtfsContext::LoadRoot(CItem* driveitem)
                     {
                         if (curAttribute->IsNonResident()) continue;
                         const auto fn = ByteOffset<Finder::REPARSE_DATA_BUFFER>(curAttribute, curAttribute->Form.Resident.ValueOffset);
-                        auto& baseRecord = getMapBinRef(baseFileRecordMapTemp, baseFileRecordMapMutex, baseRecordIndex, binSize, numBins);
                         baseRecord.ReparsePointTag = fn->ReparseTag;
+
+                        // Treat WOF files as compressed
+                        if (fn->ReparseTag == IO_REPARSE_TAG_WOF)
+                        {
+                            baseRecord.Attributes |= FILE_ATTRIBUTE_COMPRESSED;
+                        }
+
                         if (Finder::IsJunction(*fn))
                         {
                             baseRecord.ReparsePointTag = IO_REPARSE_TAG_JUNCTION_POINT;
@@ -333,93 +360,83 @@ bool FinderNtfsContext::LoadRoot(CItem* driveitem)
         }
     });
 
-    {
-        // Merge temporary maps into the main maps using jthread for parallel execution
-        std::jthread t1([&]() { for (auto& map : baseFileRecordMapTemp) { m_BaseFileRecordMap.merge(map); }});
-        std::jthread t2([&]() { for (auto& map : nonBaseToBaseMapTemp) { m_NonBaseToBaseMap.merge(map); }});
-        std::jthread t3([&]() { for (auto& map : parentToChildMapTemp) { m_ParentToChildMap.merge(map); }});
-    }
-
-    if (!m_ParentToChildMap.contains(NtfsNodeRoot))
+    // Verify root node exists
+    if (!m_parentToChildMap.contains(NtfsNodeRoot))
     {
         return false;
     }
 
-    // Remove bad cluster node
-    std::erase_if(m_ParentToChildMap[NtfsNodeRoot], [](const auto& child) {
-        return child.BaseRecord < NtfsReservedMax && child.BaseRecord != NtfsNodeRoot;
-    });
-
     driveitem->SetIndex(NtfsNodeRoot);
+    m_isLoaded = true;
     return true;
 }
 
-
 bool FinderNtfs::FindNext()
 {
-    if (m_RecordIterator == m_ChildrenSet->end()) return false;;
-    m_Index = m_RecordIterator->BaseRecord;
-    m_CurrentRecord = &m_Master->m_BaseFileRecordMap[m_Index];
-    m_CurrentRecordName = &(*m_RecordIterator);
-    ++m_RecordIterator;
+    if (m_recordIterator == m_recordIteratorEnd) return false;
+    m_index = m_recordIterator->BaseRecord;
+    const auto it = m_master->m_baseFileRecordMap.find(m_index);
+    if (it == m_master->m_baseFileRecordMap.end()) return false;
+    m_currentRecord = &it->second;
+    m_currentRecordName = &(*m_recordIterator);
+    ++m_recordIterator;
 
     return true;
 }
 
 bool FinderNtfs::FindFile(const CItem* item)
 {
-    m_Base = item->GetPath();
-    const auto& result = m_Master->m_ParentToChildMap.find(item->GetIndex());
-    if (result == m_Master->m_ParentToChildMap.end()) return false;
-    m_ChildrenSet = &result->second;
-    m_RecordIterator = m_ChildrenSet->begin();
+    m_base = item->GetPath();
+    const auto result = m_master->m_parentToChildMap.find(item->GetIndex());
+    if (result == m_master->m_parentToChildMap.end()) return false;
+    m_recordIteratorEnd = result->second.end();
+    m_recordIterator = result->second.begin();
     return FindNext();
 }
 
 DWORD FinderNtfs::GetAttributes() const
 {
-    return m_CurrentRecord->Attributes;
+    return m_currentRecord->Attributes;
 }
 
-ULONG FinderNtfs::GetIndex() const
+ULONGLONG FinderNtfs::GetIndex() const
 {
-    return static_cast<ULONG>(m_CurrentRecordName->BaseRecord);
+    return m_currentRecordName->BaseRecord;
 }
 
 DWORD FinderNtfs::GetReparseTag() const
 {
-    return m_CurrentRecord->ReparsePointTag;
+    return m_currentRecord->ReparsePointTag;
 }
 
 std::wstring FinderNtfs::GetFileName() const
 {
-    return m_CurrentRecordName->FileName;
+    return m_currentRecordName->FileName;
 }
 
 ULONGLONG FinderNtfs::GetFileSizePhysical() const
 {
-    if (m_CurrentRecord->ReparsePointTag != 0) return 0;
-    return m_CurrentRecord->PhysicalSize;
+    return m_currentRecord->PhysicalSize;
 }
 
 ULONGLONG FinderNtfs::GetFileSizeLogical() const
 {
-    return m_CurrentRecord->LogicalSize;
+    return m_currentRecord->LogicalSize;
 }
 
 ULONGLONG FinderNtfs::GetFileLineCount() const
 {
     // For NTFS, we need to calculate line count by reading the file
     // Only do this for files, not directories
-    if ((m_CurrentRecord->Attributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
+    if ((m_currentRecord->Attributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
     {
         return 0;
     }
     
-    // Use the CountFileLines function we created earlier
+    // Use the CountFileLines function
     ULONGLONG lineCount = CountFileLines(GetFilePath());
     
-    // 在行数显示模式下，避免0值导致文件在TreeMap中消失
+    // Avoid 0 value causing files to disappear in TreeMap when line count display is enabled
     if (COptions::ShowLineCountInsteadOfSize && lineCount == 0)
     {
         return 1;
@@ -430,24 +447,23 @@ ULONGLONG FinderNtfs::GetFileLineCount() const
 
 FILETIME FinderNtfs::GetLastWriteTime() const
 {
-    return m_CurrentRecord->LastModifiedTime;
+    return m_currentRecord->LastModifiedTime;
 }
 
 std::wstring FinderNtfs::GetFilePath() const
 {
     // Get full path to folder or file
-    std::wstring path = (m_Base.at(m_Base.size() - 1) == L'\\') ?
-        (m_Base + GetFileName()) : (m_Base + L"\\" + GetFileName());
+    std::wstring path = (m_base.back() == L'\\') ?
+        (m_base + GetFileName()) :
+        (m_base + L"\\" + GetFileName());
 
     // Strip special dos chars
-    if (wcsncmp(path.data(), m_DosUNC.data(), m_DosUNC.length() - 1) == 0)
-        path = L"\\\\" + path.substr(m_DosUNC.length());
-    else if (wcsncmp(path.data(), m_Dos.data(), m_Dos.length() - 1) == 0)
-        path = path.substr(m_Dos.length());
+    if (path.starts_with(s_dosUNCPath)) return L"\\\\" + path.substr(s_dosUNCPath.length());
+    if (path.starts_with(s_dosPath)) return path.substr(s_dosPath.length());
     return path;
 }
 
-bool FinderNtfs::IsDots() const
+bool FinderNtfs::IsReserved() const
 {
-    return m_CurrentRecordName->FileName == L"." || m_CurrentRecordName->FileName == L"..";
+    return m_index < FinderNtfsContext::NtfsReservedMax;
 }

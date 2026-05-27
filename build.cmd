@@ -1,6 +1,6 @@
 @ECHO OFF
 TITLE Building WinDirStat
-SETLOCAL
+SETLOCAL EnableExtensions EnableDelayedExpansion
 
 :: solicit whether this is production or beta build
 ECHO Please choose a release type:
@@ -18,23 +18,18 @@ SET THISDIR=%THISDIR:~0,-1%
 SET BASEDIR=%THISDIR%\.
 SET BLDDIR=%THISDIR%\build
 SET PUBDIR=%THISDIR%\publish
+SET STOREBLDDIR=%BLDDIR%\store
 
 :: cert info to use for signing
-set TSAURL=http://time.certum.pl/
-set LIBNAME=WinDirStat
-set LIBURL=https://github.com/WinDirStat/WinDirStat
+SET "TSAURL=http://time.certum.pl/"
+SET "LIBNAME=WinDirStat"
+SET "LIBURL=https://github.com/WinDirStat/WinDirStat"
 
-:: prepend preferred git and 7-zip paths
+:: prepend 7-Zip and system paths
 IF EXIST "%ProgramFiles%\7-Zip" SET PATH=%ProgramFiles%\7-Zip;%PATH%
 IF EXIST "%ProgramFiles(x86)%\7-Zip" SET PATH=%ProgramFiles(x86)%\7-Zip;%PATH%
-IF EXIST "%ProgramFiles%\Git" SET PATH=%ProgramFiles%\Git;%PATH%
-IF EXIST "%ProgramFiles(x86)%\Git" SET PATH=%ProgramFiles(x86)%\Git;%PATH%
-
-:: prepend preferred powershell path
-FOR /F "DELIMS=" %%X IN ('DIR "%PROGRAMFILES%\PowerShell\pwsh.exe" /B /S /A') DO SET PATH=%PATH%;%%~dpX
-
-:: prepend preferred system paths
 SET PATH=%WINDIR%\system32;%WINDIR%\system32\WindowsPowerShell\v1.0;%PATH%
+SET "POWERSHELL=POWERSHELL.EXE -NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass"
 
 :: create define for build about box
 SET PRODUCTION=0
@@ -42,28 +37,21 @@ IF /I "%RELTYPE%" EQU "PRODUCTION" SET PRODUCTION=1
 
 :: import vs build tools
 IF EXIST "%BLDDIR%" RD /S /Q "%BLDDIR%"
-FOR /F "DELIMS=" %%X IN ('DIR "%ProgramFiles%\Microsoft Visual Studio\VsDevCmd.bat" /A /S /B') DO SET VS=%%X
-CALL "%VS%"
+FOR /F "USEBACKQ TOKENS=*" %%X in (`
+    "%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" ^
+        -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 ^
+        -property installationPath
+`) DO CALL "%%X\Common7\Tools\VsDevCmd.bat"
 IF EXIST "%WindowsSdkVerBinPath%\x86" msbuild "%BASEDIR%\windirstat.sln" /p:Configuration=Release /t:Clean;Build /p:Platform=Win32,ExternalCompilerOptions=/DPRODUCTION=%PRODUCTION%
 IF EXIST "%WindowsSdkVerBinPath%\x64" msbuild "%BASEDIR%\windirstat.sln" /p:Configuration=Release /t:Clean;Build /p:Platform=x64,ExternalCompilerOptions=/DPRODUCTION=%PRODUCTION%
 IF EXIST "%WindowsSdkVerBinPath%\arm64" msbuild "%BASEDIR%\windirstat.sln" /p:Configuration=Release /t:Clean;Build /p:Platform=ARM64,ExternalCompilerOptions=/DPRODUCTION=%PRODUCTION%
-TIMEOUT /t 3 /nobreak >NUL
 
-:: optimize executable size if pwsh is present
-PWSH.EXE -Help >NUL 2>&1
-IF %ERRORLEVEL% NEQ 0 ECHO PowerShell not found; skipping executable pruning
-IF %ERRORLEVEL% EQU 0 FOR %%A IN (arm64 x86 x64) DO (
-  PWSH -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Unrestricted -File "%THISDIR%\windirstat\Build\Prune Executable.ps1" "%BLDDIR%\WinDirStat_%%A.exe"
-)
-
-:: sign the main executables 
+:: try signing the main executables
 signtool sign /fd sha256 /tr %TSAURL% /td sha256 /d %LIBNAME% /du %LIBURL% "%BLDDIR%\*.exe"
+IF ERRORLEVEL 1 ECHO Executable signing failed; continuing without signed executables.
 
 :: build the msi
 CALL "%THISDIR%\setup\build.cmd" "%RELTYPE%"
-
-:: sign the msi
-signtool sign /fd sha256 /tr %TSAURL% /td sha256 /d %LIBNAME% /du %LIBURL% "%BLDDIR%\*.msi"
 
 :: copy the output files
 IF EXIST "%PUBDIR%" RD /S /Q "%PUBDIR%"
@@ -74,6 +62,14 @@ FOR %%A IN (arm64 x86 x64) DO (
    COPY /Y "%BLDDIR%\WinDirStat-%%A.msi" "%PUBDIR%"
 )
 
+:: build the msix files
+%POWERSHELL% -File "%THISDIR%\setup\store\build-store-msix.ps1" -OutDir "%PUBDIR%"
+IF ERRORLEVEL 1 EXIT /B 1
+
+:: sign the msi, msix, and msibundle
+signtool sign /fd sha256 /tr %TSAURL% /td sha256 /d %LIBNAME% /du %LIBURL% "%PUBDIR%\*.msi*"
+IF ERRORLEVEL 1 ECHO MSI/MSIX signing failed; continuing without a signed MSI.
+
 :: 7-zip executables and debug files
 7z.EXE >NUL 2>&1
 IF %ERRORLEVEL% NEQ 0 ECHO 7-Zip not found; skipping 7-Zip archive
@@ -82,20 +78,12 @@ IF %ERRORLEVEL% EQU 0 7z.EXE a -mx=9 "%PUBDIR%\WinDirStat-DebugSymbols.7z" "%PUB
 DEL /F /S /Q "%PUBDIR%\*.pdb" >NUL 2>&1
 
 :: zip up executables
-SET POWERSHELL=POWERSHELL.EXE -NoProfile -NonInteractive -NoLogo -ExecutionPolicy Unrestricted
-PUSHD "%PUBDIR%"
-FOR %%A IN (arm64 x86 x64) DO (
-   %POWERSHELL% -Command "Compress-Archive '%PUBDIR%\%%A' -DestinationPath ('%PUBDIR%\WinDirStat.zip') -Update"
-)
-POPD
-
+FOR %%A IN (arm64 x86 x64) DO %POWERSHELL% -Command "Compress-Archive '%PUBDIR%\%%A' -DestinationPath '%PUBDIR%\WinDirStat.zip' -Update"
 
 :: output hash information
 SET HASHFILE=%PUBDIR%\WinDirStat-Hashes.txt
 IF EXIST "%HASHFILE%" DEL /F "%HASHFILE%"
-%POWERSHELL% -Command "Get-ChildItem -Include @('*.msi','*.exe','*.zip','*.7z') -Path '%PUBDIR%' -Recurse | Get-FileHash -Algorithm SHA256 | Out-File -Append '%HASHFILE%' -Width 256"
-%POWERSHELL% -Command "Get-ChildItem -Include @('*.msi','*.exe','*.zip','*.7z') -Path '%PUBDIR%' -Recurse | Get-FileHash -Algorithm SHA1 | Out-File -Append '%HASHFILE%' -Width 256"
-%POWERSHELL% -Command "Get-ChildItem -Include @('*.msi','*.exe','*.zip','*.7z') -Path '%PUBDIR%' -Recurse | Get-FileHash -Algorithm MD5 | Out-File -Append '%HASHFILE%' -Width 256"
-%POWERSHELL% -Command "$Data = Get-Content '%HASHFILE%'; $Data.Replace((Get-Item -LiteralPath '%PUBDIR%').FullName + '\','').Trim() | Set-Content '%HASHFILE%'"
+%POWERSHELL% -Command "$f = Get-ChildItem -Recurse -Include @('*.msi','*.zip','*.7z','*.msix','*.msixbundle') -Path '%PUBDIR%' | Where-Object { $_.FullName -notlike '*\unsigned\*' }; 'SHA256','SHA1','MD5' | ForEach-Object { $f | Get-FileHash -Algorithm $_ | Out-File -Append '%HASHFILE%' -Width 256 }"
+%POWERSHELL% -Command "$Data = Get-Content '%HASHFILE%'; if ($Data) { $Data.Replace((Get-Item -LiteralPath '%PUBDIR%').FullName + '\','').Trim() | Set-Content '%HASHFILE%' }"
 
 PAUSE

@@ -1,204 +1,197 @@
 ﻿// WinDirStat - Directory Statistics
 // Copyright © WinDirStat Team
 //
-// This program is free software; you can redistribute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
+// the Free Software Foundation, either version 2 of the License, or
+// at your option any later version.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-#include "stdafx.h"
-#include "WinDirStat.h"
-#include "DirStatDoc.h"
-#include "Item.h"
-#include "MainFrame.h"
+#include "pch.h"
 #include "FileTreeView.h"
-#include "GlobalHelpers.h"
-#include "Localization.h"
 
-/////////////////////////////////////////////////////////////////////////////
+IMPLEMENT_DYNCREATE(CFileTreeView, CControlView)
 
-IMPLEMENT_DYNCREATE(CFileTreeView, CView)
-
-CFileTreeView::CFileTreeView() = default;
-
-void CFileTreeView::SysColorChanged()
-{
-    m_Control.SysColorChanged();
-}
-
-void CFileTreeView::OnDraw(CDC* pDC)
-{
-    UNREFERENCED_PARAMETER(pDC);
-}
-
-#pragma warning(push)
-#pragma warning(disable:26454)
-BEGIN_MESSAGE_MAP(CFileTreeView, CView)
-    ON_WM_INITMENUPOPUP()
-    ON_WM_SIZE()
+BEGIN_MESSAGE_MAP(CFileTreeView, CControlView)
     ON_WM_CREATE()
-    ON_WM_ERASEBKGND()
-    ON_WM_SETFOCUS()
-    ON_NOTIFY(LVN_ITEMCHANGED, ID_WDS_CONTROL, OnLvnItemChanged)
-    ON_UPDATE_COMMAND_UI(ID_POPUP_TOGGLE, OnUpdatePopupToggle)
-    ON_COMMAND(ID_POPUP_TOGGLE, OnPopupToggle)
 END_MESSAGE_MAP()
-#pragma warning(pop)
-
-void CFileTreeView::OnSize(const UINT nType, const int cx, const int cy)
-{
-    CView::OnSize(nType, cx, cy);
-    if (IsWindow(m_Control.m_hWnd))
-    {
-        CRect rc(0, 0, cx, cy);
-        m_Control.MoveWindow(rc);
-    }
-}
 
 void CFileTreeView::CreateColumns(const bool all)
 {
     if (all)
     {
         // Columns should be in enumeration order so initial sort will work
-        m_Control.InsertColumn(CHAR_MAX, Localization::Lookup(IDS_COL_NAME).c_str(), LVCFMT_LEFT, 250, COL_NAME);
-        m_Control.InsertColumn(CHAR_MAX, Localization::Lookup(IDS_COL_SUBTREEPERCENTAGE).c_str(), LVCFMT_RIGHT, CItem::GetSubtreePercentageWidth() + 30, COL_SUBTREEPERCENTAGE);
-        m_Control.InsertColumn(CHAR_MAX, Localization::Lookup(IDS_COL_PERCENTAGE).c_str(), LVCFMT_RIGHT, 90, COL_PERCENTAGE);
+        InsertCol(IDS_COL_NAME, LVCFMT_LEFT, 250, COL_NAME);
+        InsertCol(IDS_COL_SIZE_PROPORTION, LVCFMT_RIGHT, CItem::GetSizeProportionWidth() + 30, COL_SIZE_PROPORTION);
+        InsertCol(IDS_COL_PERCENTAGE, LVCFMT_RIGHT, 90, COL_PERCENTAGE);
     }
 
     // reset sort and remove optional columns
-    m_Control.SetSorting(COL_PERCENTAGE, m_Control.GetAscendingDefault(COL_PERCENTAGE));
-    m_Control.SortItems();
-    while (m_Control.DeleteColumn(COL_OPTIONAL_START)) {}
+    m_control.SetSorting(COL_PERCENTAGE, m_control.GetAscendingDefault(COL_PERCENTAGE));
+    m_control.SortItems();
+    while (m_control.DeleteColumn(COL_OPTIONAL_START)) {}
 
     // add optional columns based on settings
-    if (COptions::ShowColumnLineCount)
-        m_Control.InsertColumn(CHAR_MAX, Localization::Lookup(IDS_COL_LINE_COUNT).c_str(), LVCFMT_RIGHT, 90, COL_LINE_COUNT);
-    if (COptions::ShowColumnSizePhysical)
-        m_Control.InsertColumn(CHAR_MAX, Localization::Lookup(IDS_COL_SIZE_PHYSICAL).c_str(), LVCFMT_RIGHT, 90, COL_SIZE_PHYSICAL);
-    if (COptions::ShowColumnSizeLogical)
-        m_Control.InsertColumn(CHAR_MAX, Localization::Lookup(IDS_COL_SIZE_LOGICAL).c_str(), LVCFMT_RIGHT, 90, COL_SIZE_LOGICAL);
-    if (COptions::ShowColumnItems)
-        m_Control.InsertColumn(CHAR_MAX, Localization::Lookup(IDS_COL_ITEMS).c_str(), LVCFMT_RIGHT, 90, COL_ITEMS);
-    if (COptions::ShowColumnFiles)
-        m_Control.InsertColumn(CHAR_MAX, Localization::Lookup(IDS_COL_FILES).c_str(), LVCFMT_RIGHT, 90, COL_FILES);
-    if (COptions::ShowColumnFolders)
-        m_Control.InsertColumn(CHAR_MAX, Localization::Lookup(IDS_COL_FOLDERS).c_str(), LVCFMT_RIGHT, 90, COL_FOLDERS);
-    if (COptions::ShowColumnLastChange)
-        m_Control.InsertColumn(CHAR_MAX, Localization::Lookup(IDS_COL_LASTCHANGE).c_str(), LVCFMT_LEFT, 120, COL_LASTCHANGE);
-    if (COptions::ShowColumnAttributes)
-        m_Control.InsertColumn(CHAR_MAX, Localization::Lookup(IDS_COL_ATTRIBUTES).c_str(), LVCFMT_LEFT, 90, COL_ATTRIBUTES);
-    if (COptions::ShowColumnOwner)
-        m_Control.InsertColumn(CHAR_MAX, Localization::Lookup(IDS_COL_OWNER).c_str(), LVCFMT_LEFT, 200, COL_OWNER);
+    if (COptions::ShowColumnLineCount) InsertCol(IDS_COL_LINE_COUNT, LVCFMT_RIGHT, 90, COL_LINE_COUNT);
+    if (COptions::ShowColumnSizePhysical) InsertCol(IDS_COL_SIZE_PHYSICAL, LVCFMT_RIGHT, 90, COL_SIZE_PHYSICAL);
+    if (COptions::ShowColumnSizeLogical) InsertCol(IDS_COL_SIZE_LOGICAL, LVCFMT_RIGHT, 90, COL_SIZE_LOGICAL);
+    if (COptions::ShowColumnItems) InsertCol(IDS_COL_ITEMS, LVCFMT_RIGHT, 90, COL_ITEMS);
+    if (COptions::ShowColumnFiles) InsertCol(IDS_COL_FILES, LVCFMT_RIGHT, 90, COL_FILES);
+    if (COptions::ShowColumnFolders) InsertCol(IDS_COL_FOLDERS, LVCFMT_RIGHT, 90, COL_FOLDERS);
+    if (COptions::ShowColumnLastChange) InsertCol(IDS_COL_LAST_CHANGE, LVCFMT_LEFT, 120, COL_LAST_CHANGE);
+    if (COptions::ShowColumnAttributes) InsertCol(IDS_COL_ATTRIBUTES, LVCFMT_LEFT, 90, COL_ATTRIBUTES);
+    if (COptions::ShowColumnOwner) InsertCol(IDS_COL_OWNER, LVCFMT_LEFT, 200, COL_OWNER);
 
-    m_Control.OnColumnsInserted();
-    
+    m_control.OnColumnsInserted();
 }
 
 int CFileTreeView::OnCreate(const LPCREATESTRUCT lpCreateStruct)
 {
-    if (CView::OnCreate(lpCreateStruct) == -1)
-    {
-        return -1;
-    }
+    if (CControlView::OnCreate(lpCreateStruct) == -1) return -1;
 
-    constexpr RECT rect = {0, 0, 0, 0};
-    VERIFY(m_Control.CreateExtended(LVS_EX_HEADERDRAGDROP, WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SHOWSELALWAYS, rect, this, ID_WDS_CONTROL));
-
-    m_Control.ShowGrid(COptions::ListGrid);
-    m_Control.ShowStripes(COptions::ListStripes);
-    m_Control.ShowFullRowSelection(COptions::ListFullRowSelection);
+    constexpr RECT rect = { 0, 0, 0, 0 };
+    m_control.CreateExtended(LVS_EX_HEADERDRAGDROP, LVS_OWNERDATA | WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SHOWSELALWAYS, rect, this, ID_WDS_CONTROL);
+    m_control.ShowGrid(COptions::ListGrid);
+    m_control.ShowStripes(COptions::ListStripes);
+    m_control.ShowFullRowSelection(COptions::ListFullRowSelection);
 
     CreateColumns(true);
 
     return 0;
 }
 
-BOOL CFileTreeView::OnEraseBkgnd(CDC* /*pDC*/)
-{
-    return true;
-}
-
-void CFileTreeView::OnSetFocus(CWnd* /*pOldWnd*/)
-{
-    m_Control.SetFocus();
-}
-
-void CFileTreeView::OnLvnItemChanged(NMHDR* pNMHDR, LRESULT* pResult)
-{
-    const auto pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
-
-    // only process state changes
-    if ((pNMLV->uChanged & LVIF_STATE) == 0)
-    {
-        return;
-    }
-  
-    // Signal to listeners that selection has changed
-    GetDocument()->UpdateAllViews(this, HINT_SELECTIONREFRESH);
-     
-    *pResult = FALSE;
-}
 
 void CFileTreeView::OnUpdate(CView* pSender, const LPARAM lHint, CObject* pHint)
 {
-    ASSERT(AfxGetThread() != nullptr);
+    CControlView::OnUpdate(pSender, lHint,
+        reinterpret_cast<CObject*>(CDirStatDoc::Get()->GetRootItem()));
 
-    switch (lHint)
+    if (lHint == HINT_SELECTIONACTION)
     {
-    case HINT_NEWROOT:
-        {
-            m_Control.SetRootItem(GetDocument()->GetRootItem());
-            m_Control.Invalidate();
-        }
-        break;
-
-    case HINT_SELECTIONACTION:
-        {
-            m_Control.EmulateInteractiveSelection(reinterpret_cast<const CItem*>(pHint));
-        }
-        break;
-
-    case HINT_ZOOMCHANGED:
-        {
-            CView::OnUpdate(pSender, lHint, pHint);
-        }
-        break;
-
-    case HINT_LISTSTYLECHANGED:
-        {
-            m_Control.ShowGrid(COptions::ListGrid);
-            m_Control.ShowStripes(COptions::ListStripes);
-            m_Control.ShowFullRowSelection(COptions::ListFullRowSelection);
-        }
-        break;
-
-    case HINT_NULL:
-        {
-            CView::OnUpdate(pSender, lHint, pHint);
-        }
-        break;
-
-    default:
-        break;
+        m_control.EmulateInteractiveSelection(reinterpret_cast<const CItem*>(pHint));
     }
 }
 
-void CFileTreeView::OnUpdatePopupToggle(CCmdUI* pCmdUI)
+IMPLEMENT_DYNCREATE(CFileWatcherView, CControlView)
+
+BEGIN_MESSAGE_MAP(CFileWatcherView, CControlView)
+    ON_WM_CREATE()
+END_MESSAGE_MAP()
+
+int CFileWatcherView::OnCreate(const LPCREATESTRUCT lpCreateStruct)
 {
-    pCmdUI->Enable(m_Control.SelectedItemCanToggle());
+    if (CControlView::OnCreate(lpCreateStruct) == -1) return -1;
+
+    constexpr RECT rect = {0, 0, 0, 0};
+    m_control.CreateExtended(LVS_EX_HEADERDRAGDROP, LVS_OWNERDATA | LVS_SINGLESEL | WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SHOWSELALWAYS, rect, this, ID_WDS_CONTROL);
+    m_control.ShowGrid(COptions::ListGrid);
+    m_control.ShowStripes(COptions::ListStripes);
+    m_control.ShowFullRowSelection(COptions::ListFullRowSelection);
+
+    // Columns should be in enumeration order so initial sort will work
+    InsertCol(IDS_COL_NAME, LVCFMT_LEFT, 500, COL_ITEMWATCH_NAME);
+    InsertCol(IDS_COL_TIME, LVCFMT_LEFT, 110, COL_ITEMWATCH_TIME);
+    InsertCol(IDS_COL_OPERATION, LVCFMT_LEFT, 100, COL_ITEMWATCH_ACTION);
+    InsertCol(IDS_COL_SIZE_LOGICAL, LVCFMT_RIGHT, 90, COL_ITEMWATCH_SIZE_LOGICAL);
+    m_control.SetSorting(COL_ITEMWATCH_TIME, false);
+
+    m_control.OnColumnsInserted();
+
+    return 0;
 }
 
-void CFileTreeView::OnPopupToggle()
+IMPLEMENT_DYNCREATE(CFileTopView, CControlView)
+
+BEGIN_MESSAGE_MAP(CFileTopView, CControlView)
+    ON_WM_CREATE()
+END_MESSAGE_MAP()
+
+int CFileTopView::OnCreate(const LPCREATESTRUCT lpCreateStruct)
 {
-    m_Control.ToggleSelectedItem();
+    if (CControlView::OnCreate(lpCreateStruct) == -1) return -1;
+    
+    constexpr RECT rect = { 0, 0, 0, 0 };
+    m_control.CreateExtended(LVS_EX_HEADERDRAGDROP, LVS_OWNERDATA | WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SHOWSELALWAYS, rect, this, ID_WDS_CONTROL);
+    m_control.ShowGrid(COptions::ListGrid);
+    m_control.ShowStripes(COptions::ListStripes);
+    m_control.ShowFullRowSelection(COptions::ListFullRowSelection);
+
+    // Columns should be in enumeration order so initial sort will work
+    InsertCol(IDS_COL_NAME, LVCFMT_LEFT, 500, COL_ITEMTOP_NAME);
+    InsertCol(IDS_COL_SIZE_PHYSICAL, LVCFMT_RIGHT, 90, COL_ITEMTOP_SIZE_PHYSICAL);
+    InsertCol(IDS_COL_SIZE_LOGICAL, LVCFMT_RIGHT, 90, COL_ITEMTOP_SIZE_LOGICAL);
+    InsertCol(IDS_COL_LAST_CHANGE, LVCFMT_LEFT, 120, COL_ITEMTOP_LAST_CHANGE);
+    m_control.SetSorting(COL_ITEMTOP_SIZE_PHYSICAL, false);
+
+    m_control.OnColumnsInserted();
+
+    return 0;
 }
+
+IMPLEMENT_DYNCREATE(CFileDupeView, CControlView)
+
+BEGIN_MESSAGE_MAP(CFileDupeView, CControlView)
+    ON_WM_CREATE()
+END_MESSAGE_MAP()
+
+int CFileDupeView::OnCreate(const LPCREATESTRUCT lpCreateStruct)
+{
+    if (CControlView::OnCreate(lpCreateStruct) == -1) return -1;
+
+    constexpr RECT rect = { 0, 0, 0, 0 };
+    m_control.CreateExtended(LVS_EX_HEADERDRAGDROP, LVS_OWNERDATA | WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SHOWSELALWAYS, rect, this, ID_WDS_CONTROL);
+    m_control.ShowGrid(COptions::ListGrid);
+    m_control.ShowStripes(COptions::ListStripes);
+    m_control.ShowFullRowSelection(COptions::ListFullRowSelection);
+
+    // Columns should be in enumeration order so initial sort will work
+    const std::wstring hashName = Localization::Lookup(IDS_COL_HASH) + L" / " + Localization::Lookup(IDS_COL_NAME);
+    m_control.InsertColumn(CHAR_MAX, hashName.c_str(), LVCFMT_LEFT, DpiRest(500), COL_ITEMDUP_NAME);
+    InsertCol(IDS_COL_ITEMS, LVCFMT_RIGHT, 70, COL_ITEMDUP_ITEMS);
+    InsertCol(IDS_COL_SIZE_PHYSICAL, LVCFMT_RIGHT, 80, COL_ITEMDUP_SIZE_PHYSICAL);
+    InsertCol(IDS_COL_SIZE_LOGICAL, LVCFMT_RIGHT, 80, COL_ITEMDUP_SIZE_LOGICAL);
+    InsertCol(IDS_COL_LAST_CHANGE, LVCFMT_LEFT, 120, COL_ITEMDUP_LAST_CHANGE);
+    m_control.SetSorting(COL_ITEMDUP_SIZE_PHYSICAL, false);
+
+    m_control.OnColumnsInserted();
+
+    return 0;
+}
+
+IMPLEMENT_DYNCREATE(CFileSearchView, CControlView)
+
+BEGIN_MESSAGE_MAP(CFileSearchView, CControlView)
+    ON_WM_CREATE()
+END_MESSAGE_MAP()
+
+int CFileSearchView::OnCreate(const LPCREATESTRUCT lpCreateStruct)
+{
+    if (CControlView::OnCreate(lpCreateStruct) == -1) return -1;
+
+    constexpr RECT rect = { 0, 0, 0, 0 };
+    m_control.CreateExtended(LVS_EX_HEADERDRAGDROP, LVS_OWNERDATA | WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SHOWSELALWAYS, rect, this, ID_WDS_CONTROL);
+    m_control.ShowGrid(COptions::ListGrid);
+    m_control.ShowStripes(COptions::ListStripes);
+    m_control.ShowFullRowSelection(COptions::ListFullRowSelection);
+
+    // Columns should be in enumeration order so initial sort will work
+    InsertCol(IDS_COL_NAME, LVCFMT_LEFT, 500, COL_ITEMSEARCH_NAME);
+    InsertCol(IDS_COL_SIZE_PHYSICAL, LVCFMT_RIGHT, 90, COL_ITEMSEARCH_SIZE_PHYSICAL);
+    InsertCol(IDS_COL_SIZE_LOGICAL, LVCFMT_RIGHT, 90, COL_ITEMSEARCH_SIZE_LOGICAL);
+    InsertCol(IDS_COL_LAST_CHANGE, LVCFMT_LEFT, 120, COL_ITEMSEARCH_LAST_CHANGE);
+    m_control.SetSorting(COL_ITEMSEARCH_SIZE_LOGICAL, false);
+
+    m_control.OnColumnsInserted();
+
+    return 0;
+}
+
+

@@ -1,87 +1,156 @@
 ﻿// WinDirStat - Directory Statistics
 // Copyright © WinDirStat Team
 //
-// This program is free software; you can redistribute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
+// the Free Software Foundation, either version 2 of the License, or
+// at your option any later version.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-#include "stdafx.h"
-#include "WinDirStat.h"
-#include "DirStatDoc.h"
-#include "Item.h"
-#include "MainFrame.h"
+#include "pch.h"
 #include "FileTreeView.h"
-#include "Localization.h"
 
-CFileTreeControl::CFileTreeControl() : CTreeListControl(20, COptions::FileTreeColumnOrder.Ptr(), COptions::FileTreeColumnWidths.Ptr())
+CFileTreeControl::CFileTreeControl() : CTreeListControl(COptions::FileTreeColumnOrder.Ptr(), COptions::FileTreeColumnWidths.Ptr(), LF_FILETREE, true)
 {
-    m_Singleton = this;
+    m_singleton = this;
 }
 
 bool CFileTreeControl::GetAscendingDefault(const int column)
 {
-    return column == COL_NAME || column == COL_LASTCHANGE;
+    return column == COL_NAME || column == COL_LAST_CHANGE;
 }
 
-#pragma warning(push)
-#pragma warning(disable:26454)
+// Select the first item of the same parent as the first selected item that matches any of the specified ITEMTYPE
+void CFileTreeControl::SelectFirstItemByType(ITEMTYPE itemType)
+{
+    CItem* const itemSelected = GetFirstSelectedItem<CItem>();
+    if (!itemSelected) return;
+
+    const CSetRedrawLock lock(this); // Supress redraw until the end of the function
+    CItem* const itemTarget = static_cast<CItem*>(itemSelected->GetParent());
+    CItem** const items = (CItem**)m_items.data();
+
+    for (int i : std::views::iota(0, static_cast<int>(m_items.size())))
+    {
+        CItem* const itemCurrent = items[i];
+        if (itemCurrent->GetParent() == itemTarget && itemCurrent->IsTypeOrFlag(itemType))
+        {
+            DeselectAll();
+            SetItemState(i, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+            EnsureVisible(i, FALSE);
+            return;
+        }
+    }
+}
+
 BEGIN_MESSAGE_MAP(CFileTreeControl, CTreeListControl)
-    ON_WM_SETFOCUS()
     ON_WM_KEYDOWN()
-    ON_NOTIFY_EX(HDN_ENDDRAG, 0, OnHeaderEndDrag)
+    ON_WM_LBUTTONDOWN()
+    ON_WM_SETCURSOR()
 END_MESSAGE_MAP()
-#pragma warning(pop)
 
-CFileTreeControl* CFileTreeControl::m_Singleton = nullptr;
+CFileTreeControl* CFileTreeControl::m_singleton = nullptr;
 
-BOOL CFileTreeControl::OnHeaderEndDrag(UINT, NMHDR* pNMHDR, LRESULT* pResult)
+void CFileTreeControl::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
-    // Do not allow first column to be re-ordered
-    const LPNMHEADERW hdr = reinterpret_cast<LPNMHEADERW>(pNMHDR);
-    const BOOL block = (hdr->iItem == COL_NAME || hdr->pitem->iOrder == COL_NAME);
-    *pResult = block;
-    return block;
-}
+    if (IsControlKeyDown())
+    {
+        if (nChar == VK_LEFT)
+        {
+            SelectFirstItemByType(IT_DIRECTORY);
+            return;
+        }
 
-void CFileTreeControl::OnItemDoubleClick(const int i)
-{
-    const auto item = reinterpret_cast<const CItem*>(GetItem(i));
-    if (item->IsType(IT_FILE))
-    {
-        CDirStatDoc::OpenItem(item);
+        if (nChar == VK_RIGHT)
+        {
+            SelectFirstItemByType(IT_FILE);
+            return;
+        }
     }
-    else
-    {
-        CTreeListControl::OnItemDoubleClick(i);
-    }
-}
 
-void CFileTreeControl::OnSetFocus(CWnd* pOldWnd)
-{
-    CTreeListControl::OnSetFocus(pOldWnd);
-    CMainFrame::Get()->SetLogicalFocus(LF_FILETREE);
-}
-
-void CFileTreeControl::OnKeyDown(const UINT nChar, const UINT nRepCnt, const UINT nFlags)
-{
-    if (nChar == VK_TAB)
-    {
-        CMainFrame::Get()->MoveFocus(LF_EXTLIST);
-    }
-    else if (nChar == VK_ESCAPE)
-    {
-        CMainFrame::Get()->MoveFocus(LF_NONE);
-    }
     CTreeListControl::OnKeyDown(nChar, nRepCnt, nFlags);
+}
+
+void CFileTreeControl::OnLButtonDown(const UINT nFlags, const CPoint point)
+{
+    CTreeListControl::OnLButtonDown(nFlags, point);
+
+    // Hit test
+    LVHITTESTINFO hti{ .pt = point };
+    const int i = HitTest(&hti);
+    if (i == -1) return;
+
+    // Check if item is a hardlink or hardlinks file reference
+    const auto* item = reinterpret_cast<CItem*>(GetItem(i));
+    if (item == nullptr || !item->IsTypeOrFlag(ITF_HARDLINK, IT_HLINKS_FILE)) return;
+
+    // Validate if in physical size column
+    if (!std::ranges::any_of(std::views::iota(0, m_columnCount), [&](const int col)
+        {
+            LVCOLUMN colInfo{ .mask = LVCF_SUBITEM };
+            GetColumn(col, &colInfo);
+            return colInfo.iSubItem == COL_SIZE_PHYSICAL && GetWholeSubitemRect(i, col).PtInRect(point);
+        })) return;
+
+    if (item->IsTypeOrFlag(ITF_HARDLINK))
+    {
+        // Navigate to the hardlink index item
+        CItem* indexItem = item->FindHardlinksIndexItem();
+        if (indexItem == nullptr) return;
+
+        CDirStatDoc::Get()->UpdateAllViews(nullptr, HINT_SELECTIONACTION, indexItem);
+        ExpandItem(indexItem);
+    }
+    else if (item->IsTypeOrFlag(IT_HLINKS_FILE))
+    {
+        // Navigate to the actual file in the tree
+        CItem* linkedItem = const_cast<CItem*>(item)->GetLinkedItem();
+        if (linkedItem == nullptr || linkedItem == item) return;
+
+        CDirStatDoc::Get()->UpdateAllViews(nullptr, HINT_SELECTIONACTION, linkedItem);
+    }
+}
+
+BOOL CFileTreeControl::OnSetCursor(CWnd* pWnd, const UINT nHitTest, const UINT message)
+{
+    auto defaultReturn = [&] { return CTreeListControl::OnSetCursor(pWnd, nHitTest, message); };
+    if (nHitTest != HTCLIENT) return defaultReturn();
+
+    CPoint point;
+    GetCursorPos(&point);
+    ScreenToClient(&point);
+
+    // Hit test
+    LVHITTESTINFO hti{ .pt = point };
+    const int i = HitTest(&hti);
+    if (i == -1) return defaultReturn();
+
+    // Check if item is a hardlink or hardlinks file reference
+    const auto* item = reinterpret_cast<CItem*>(GetItem(i));
+    if (item == nullptr) return defaultReturn();
+    
+    // Check for ITF_HARDLINK or IT_HLINKS_FILE
+    const bool isHardlink = item->IsTypeOrFlag(ITF_HARDLINK);
+    const bool isHlinksFile = item->IsTypeOrFlag(IT_HLINKS_FILE);
+    
+    if (!isHardlink && !isHlinksFile) return defaultReturn();
+
+    // Validate if in physical size column
+    if (!std::ranges::any_of(std::views::iota(0, m_columnCount), [&](const int col)
+    {
+        LVCOLUMN colInfo{ .mask = LVCF_SUBITEM };
+        GetColumn(col, &colInfo);
+        return colInfo.iSubItem == COL_SIZE_PHYSICAL && GetWholeSubitemRect(i, col).PtInRect(point);
+    })) return defaultReturn();
+
+    SetCursor(AfxGetApp()->LoadStandardCursor(IDC_HAND));
+    return TRUE;
 }

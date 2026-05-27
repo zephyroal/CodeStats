@@ -1,27 +1,24 @@
 ﻿// WinDirStat - Directory Statistics
 // Copyright © WinDirStat Team
 //
-// This program is free software; you can redistribute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
+// the Free Software Foundation, either version 2 of the License, or
+// at your option any later version.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
 #pragma once
 
-#include "stdafx.h"
-#include "Item.h"
-
-#include <unordered_map>
+#include "pch.h"
+#include "TreeListControl.h"
 
 // Columns
 using ITEMTOPCOLUMNS = enum : std::uint8_t
@@ -29,14 +26,14 @@ using ITEMTOPCOLUMNS = enum : std::uint8_t
     COL_ITEMTOP_NAME,
     COL_ITEMTOP_SIZE_PHYSICAL,
     COL_ITEMTOP_SIZE_LOGICAL,
-    COL_ITEMTOP_LASTCHANGE
+    COL_ITEMTOP_LAST_CHANGE
 };
 
 class CItemTop final : public CTreeListItem
 {
-    std::shared_mutex m_Protect;
-    std::vector<CItemTop*> m_Children;
-    CItem* m_Item = nullptr;
+    std::shared_mutex m_protect;
+    std::vector<CItemTop*> m_children;
+    CItem* m_item = nullptr;
 
 public:
     CItemTop(const CItemTop&) = delete;
@@ -48,7 +45,7 @@ public:
     ~CItemTop() override;
 
     // Translation map for leveraging Item routines
-    static const std::unordered_map<uint8_t, uint8_t> columnMap;
+    static const std::unordered_map<uint8_t, uint8_t> s_columnMap;
 
     // CTreeListItem Interface
     bool DrawSubItem(int subitem, CDC* pdc, CRect rc, UINT state, int* width, int* focusLeft) override;
@@ -57,7 +54,8 @@ public:
     int GetTreeListChildCount() const override;
     CTreeListItem* GetTreeListChild(int i) const override;
     HICON GetIcon() override;
-    CTreeListItem* GetLinkedItem() override { return m_Item; }
+    CItem* GetLinkedItem() noexcept override { return m_item; }
+    CTreeListItem* GetAncestorCheckItem() override { return m_item; }
 
     void AddTopItemChild(CItemTop* child);
     void RemoveTopItemChild(CItemTop* child);

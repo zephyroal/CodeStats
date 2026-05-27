@@ -1,70 +1,53 @@
 ﻿// WinDirStat - Directory Statistics
 // Copyright © WinDirStat Team
 //
-// This program is free software; you can redistribute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
+// the Free Software Foundation, either version 2 of the License, or
+// at your option any later version.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-#include "stdafx.h"
+#include "pch.h"
 #include "SearchDlg.h"
-#include "DirStatDoc.h"
-#include "Localization.h"
 #include "FileSearchControl.h"
 #include "FileTabbedView.h"
 
-#include <regex>
-
-#include "MainFrame.h"
-
 // SearchDlg dialog
 
-IMPLEMENT_DYNAMIC(SearchDlg, CDialogEx)
+IMPLEMENT_DYNAMIC(SearchDlg, CLayoutDialogEx)
 
 SearchDlg::SearchDlg(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_SEARCH, pParent)
-    , m_SearchWholePhrase(FALSE)
-    , m_SearchCase(FALSE)
-    , m_SearchRegex(FALSE)
-    , m_SearchTerm(L"")
-    , m_Layout(this, COptions::SearchWindowRect.Ptr())
-{
-
-}
-
-SearchDlg::~SearchDlg()
+    : CLayoutDialogEx(IDD_SEARCH, COptions::SearchWindowRect.Ptr(), pParent)
+    , m_searchWholePhrase(FALSE)
+    , m_searchCase(FALSE)
+    , m_searchRegex(FALSE)
+    , m_searchTerm(L"")
 {
 }
 
 void SearchDlg::DoDataExchange(CDataExchange* pDX)
 {
     CDialogEx::DoDataExchange(pDX);
-    DDX_Check(pDX, IDC_SEARCH_WHOLE_PHRASE, m_SearchWholePhrase);
-    DDX_Check(pDX, IDC_SEARCH_CASE, m_SearchCase);
-    DDX_Check(pDX, IDC_SEARCH_REGEX, m_SearchRegex);
-    DDX_Text(pDX, IDC_SEARCH_TERM, m_SearchTerm);
+    DDX_Check(pDX, IDC_SEARCH_WHOLE_PHRASE, m_searchWholePhrase);
+    DDX_Check(pDX, IDC_SEARCH_CASE, m_searchCase);
+    DDX_Check(pDX, IDC_SEARCH_REGEX, m_searchRegex);
+    DDX_Text(pDX, IDC_SEARCH_TERM, m_searchTerm);
 }
 
-
-BEGIN_MESSAGE_MAP(SearchDlg, CDialogEx)
+BEGIN_MESSAGE_MAP(SearchDlg, CLayoutDialogEx)
     ON_BN_CLICKED(IDOK, &SearchDlg::OnBnClickedOk)
     ON_EN_CHANGE(IDC_SEARCH_TERM, &SearchDlg::OnChangeSearchTerm)
     ON_BN_CLICKED(IDC_SEARCH_REGEX, &SearchDlg::OnChangeSearchTerm)
-    ON_WM_DESTROY()
-    ON_WM_GETMINMAXINFO()
-    ON_WM_SIZE()
+    ON_WM_CTLCOLOR()
 END_MESSAGE_MAP()
-
 
 // SearchDlg message handlers
 
@@ -73,22 +56,23 @@ BOOL SearchDlg::OnInitDialog()
     CDialogEx::OnInitDialog();
 
     Localization::UpdateDialogs(*this);
+    DarkMode::AdjustControls(GetSafeHwnd());
 
     ModifyStyle(0, WS_CLIPCHILDREN);
 
-    m_Layout.AddControl(IDOK, 1, 0, 0, 0);
-    m_Layout.AddControl(IDCANCEL, 1, 0, 0, 0);
-    m_Layout.AddControl(IDC_SEARCH_TERM, 0, 0, 1, 0);
-    m_Layout.AddControl(IDC_SEARCH_WHOLE_PHRASE, 0, 0, 0, 0);
-    m_Layout.AddControl(IDC_SEARCH_REGEX, 0, 0, 0, 0);
-    m_Layout.AddControl(IDC_SEARCH_CASE, 0, 0, 0, 0);
+    m_layout.AddControl(IDOK, 1, 0, 0, 0);
+    m_layout.AddControl(IDCANCEL, 1, 0, 0, 0);
+    m_layout.AddControl(IDC_SEARCH_TERM, 0, 0, 1, 0);
+    m_layout.AddControl(IDC_SEARCH_WHOLE_PHRASE, 0, 0, 0, 0);
+    m_layout.AddControl(IDC_SEARCH_REGEX, 0, 0, 0, 0);
+    m_layout.AddControl(IDC_SEARCH_CASE, 0, 0, 0, 0);
 
-    m_Layout.OnInitDialog(true);
+    m_layout.OnInitDialog(true);
 
-    m_SearchTerm = COptions::SearchTerm.Obj().c_str();
-    m_SearchWholePhrase = COptions::SearchWholePhrase;
-    m_SearchCase = COptions::SearchCase;
-    m_SearchRegex = COptions::SearchRegex;
+    m_searchTerm = COptions::SearchTerm.Obj().c_str();
+    m_searchWholePhrase = COptions::SearchWholePhrase;
+    m_searchCase = COptions::SearchCase;
+    m_searchRegex = COptions::SearchRegex;
     UpdateData(FALSE);
 
     OnChangeSearchTerm();
@@ -99,44 +83,41 @@ void SearchDlg::OnBnClickedOk()
 {
     UpdateData();
 
-    COptions::SearchTerm.Obj() = m_SearchTerm;
-    COptions::SearchWholePhrase = (FALSE != m_SearchWholePhrase);
-    COptions::SearchCase = (FALSE != m_SearchCase);
-    COptions::SearchRegex = (FALSE != m_SearchRegex);
+    COptions::SearchTerm.Obj() = m_searchTerm;
+    COptions::SearchWholePhrase = (FALSE != m_searchWholePhrase);
+    COptions::SearchCase = (FALSE != m_searchCase);
+    COptions::SearchRegex = (FALSE != m_searchRegex);
+
+    CLayoutDialogEx::OnOK();
 
     // Process search request
-    CFileSearchControl::Get()->ProcessSearch(CDirStatDoc::GetDocument()->GetRootItem());
+    CFileSearchControl::Get()->ProcessSearch(CDirStatDoc::Get()->GetRootItem(),
+        COptions::SearchTerm, COptions::SearchCase,
+        COptions::SearchWholePhrase, COptions::SearchRegex);
 
     // Switch focus to search results
     const auto tabbedView = CMainFrame::Get()->GetFileTabbedView();
-    tabbedView->SetActiveView(tabbedView->m_FileSearchViewIndex);
-
-    CDialogEx::OnOK();
+    tabbedView->SetActiveSearchView();
 }
 
 void SearchDlg::OnChangeSearchTerm()
 {
     UpdateData();
 
+    // Auto-enable whole phrase search if * is present and not in regex mode
+    if (!m_searchRegex && m_searchTerm.Find(L'*') != -1)
+    {
+        m_searchWholePhrase = TRUE;
+        UpdateData(FALSE);
+    }
+
     const auto regexTest = CFileSearchControl::ComputeSearchRegex(
-        m_SearchTerm.GetString(), m_SearchCase, m_SearchRegex);
+        m_searchTerm.GetString(), m_searchCase, m_searchRegex);
     GetDlgItem(IDOK)->EnableWindow(regexTest.flags() & std::regex_constants::optimize);
 }
 
-void SearchDlg::OnSize(const UINT nType, const int cx, const int cy)
+HBRUSH SearchDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, const UINT nCtlColor)
 {
-    CDialogEx::OnSize(nType, cx, cy);
-    m_Layout.OnSize();
-}
-
-void SearchDlg::OnGetMinMaxInfo(MINMAXINFO* lpMMI)
-{
-    m_Layout.OnGetMinMaxInfo(lpMMI);
-    CDialogEx::OnGetMinMaxInfo(lpMMI);
-}
-
-void SearchDlg::OnDestroy()
-{
-    m_Layout.OnDestroy();
-    CDialogEx::OnDestroy();
+    const HBRUSH brush = DarkMode::OnCtlColor(pDC, nCtlColor);
+    return brush ? brush : CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
 }
