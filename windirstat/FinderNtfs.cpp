@@ -427,14 +427,7 @@ ULONGLONG FinderNtfs::GetFileLineCount() const
         return 0;
     }
 
-    ULONGLONG lineCount = CountFileLines(GetFilePath());
-
-    if (COptions::ShowLineCountInsteadOfSize && lineCount == 0)
-    {
-        return 1;
-    }
-
-    return lineCount;
+    return CountFileLines(GetFilePath());
 }
 
 FILETIME FinderNtfs::GetLastWriteTime() const

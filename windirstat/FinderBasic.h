@@ -76,7 +76,7 @@ class FinderBasic final : public Finder
     DWORD m_reparseTag = 0;
     bool m_firstRun = true;
     bool m_statMode = false;
-    ULONGLONG m_lineCount = 1;
+    ULONGLONG m_lineCount = 0;
 
 public:
 

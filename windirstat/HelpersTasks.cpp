@@ -817,8 +817,13 @@ void CopyAllDriveMappings() noexcept
 // Line counting
 ULONGLONG CountFileLines(const std::wstring& filePath)
 {
-    const std::wstring extension = filePath.substr(filePath.find_last_of(L'.'));
-    const std::vector<std::wstring> textExtensions = {
+    const auto dotPos = filePath.find_last_of(L'.');
+    if (dotPos == std::wstring::npos || dotPos + 1 >= filePath.size())
+    {
+        return 0;
+    }
+
+    static const std::unordered_set<std::wstring> textExtensions = {
         L".txt", L".cpp", L".h", L".c", L".hpp", L".cxx", L".cc", L".cs", L".java",
         L".py", L".js", L".ts", L".html", L".htm", L".css", L".xml", L".json",
         L".sql", L".php", L".rb", L".pl", L".sh", L".bat", L".cmd", L".ini",
@@ -826,7 +831,9 @@ ULONGLONG CountFileLines(const std::wstring& filePath)
         L".cg", L".hlsl", L".glsl", L".vert", L".frag", L".geom", L".tesc", L".tese", L".comp"
     };
 
-    if (std::find(textExtensions.begin(), textExtensions.end(), extension) == textExtensions.end())
+    std::wstring extension = filePath.substr(dotPos);
+    _wcslwr_s(extension.data(), extension.size() + 1);
+    if (!textExtensions.contains(extension))
     {
         return 0;
     }

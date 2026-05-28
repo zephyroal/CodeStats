@@ -863,21 +863,11 @@ void CItem::SortItemsByLineCount() const
     m_folderInfo->m_children.shrink_to_fit();
     std::ranges::sort(m_folderInfo->m_children, [](const CItem* item1, const CItem* item2)
     {
-        ULONGLONG size1, size2;
+        const ULONGLONG count1 = item1->GetLineCount();
+        const ULONGLONG count2 = item2->GetLineCount();
 
-        if (COptions::ShowLineCountInsteadOfSize)
-        {
-            size1 = item1->GetLineCount();
-            size2 = item2->GetLineCount();
-        }
-        else
-        {
-            size1 = item1->GetSizePhysical();
-            size2 = item2->GetSizePhysical();
-        }
-
-        if (size1 != size2)
-            return size1 > size2;
+        if (count1 != count2)
+            return count1 > count2;
 
         if (item1->IsTypeOrFlag(IT_FILE) != item2->IsTypeOrFlag(IT_FILE))
             return item1->IsTypeOrFlag(IT_FILE);

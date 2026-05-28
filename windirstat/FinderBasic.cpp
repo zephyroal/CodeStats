@@ -175,7 +175,7 @@ bool FinderBasic::FindNext()
         }
 
         // Calculate line count for text files
-        m_lineCount = 1;
+        m_lineCount = 0;
         if ((m_currentInfo->FileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0)
         {
             m_lineCount = CountFileLines(GetFilePathLong());
